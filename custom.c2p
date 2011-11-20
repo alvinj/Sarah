@@ -1,0 +1,14 @@
+# 'sleep' means the computer will listen to only "sleepmode" commands
+# -------------     ------------
+# COMMAND LABEL   : WHAT YOU SAY
+# -------------     ------------
+
+MELINDA           : melinda
+
+FIREPLACE_ON      : fireplace on
+FIREPLACE_OFF     : fireplace off
+KITCHEN_ON        : kitchen on
+KITCHEN_ON        : kitchen lights on
+KITCHEN_OFF       : kitchen off
+KITCHEN_OFF       : kitchen lights off
+

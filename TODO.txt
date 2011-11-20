@@ -1,0 +1,16 @@
+
+---++ Short Term
+
+* get Sarah to shut down properly (may not be shutting down b/c i keep running it through sbt)
+* create new "current time" request in Scala
+* create new "current date" request in Scala
+* let me change current voice (probably need to issue a Mac 'defaults' or 
+    possibly an AppleScript command to do this
+* refactor CurrentTimeActor to be a plugin
+* create a properties file
+  - owner's name (such as for "Hello, Al")
+
+---++ Long Term
+
+* can i reload commands and sarah.gram on each request?
+

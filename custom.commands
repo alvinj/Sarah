@@ -1,0 +1,8 @@
+
+# TODO
+KITCHEN_ON    : say "Turning kitchen lights on"
+KITCHEN_OFF   : say "Turning kitchen lights off"
+
+FIREPLACE_ON  : say "Turning fireplace on"
+FIREPLACE_OFF : say "Turning fireplace off"
+
