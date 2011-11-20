@@ -42,7 +42,8 @@ I originally wrote this application in Java, and recently I've started
 porting it over to Scala. As a result, you'll find a mix of code in the
 project. As usual, it needs to be cleaned up, but I'm also trying to 
 decide how I want to arrange it. I'd like to create a plugin architecture
-similar to what is used in tools like Eclipse or Drupal.
+similar to what is used in tools like Eclipse, Drupal, or Nagios (bare
+minimum architecture, and everything is a plugin).
 
 
 RUNNING SARAH
