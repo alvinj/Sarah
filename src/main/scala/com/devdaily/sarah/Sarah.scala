@@ -39,6 +39,9 @@ object Sarah {
 
 class Sarah {
 
+  // TODO - merge voice command files
+
+
   // all code here is basically the no-args constructor
   val cm = new ConfigurationManager("sarah.config.xml")
   val recognizer = cm.lookup("recognizer").asInstanceOf[Recognizer]
@@ -63,8 +66,11 @@ class Sarah {
     brain.start
     ears.start
   
-    // TODO - PLUGINS
+    loadPlugins
     
+  }
+  
+  def loadPlugins {
     try {
     var classLoader = new java.net.URLClassLoader(Array(new File("/Users/al/Projects/Scala/SarahHourlyChime/deploy/HourlyChime.jar").toURI.toURL),
       this.getClass.getClassLoader)
@@ -72,12 +78,10 @@ class Sarah {
     
     pluginInstance.connectToBrain(brain)
     pluginInstance.start
-  } catch {
-    case cce: ClassCastException =>  cce.printStackTrace()
-    case e:   Exception =>           e.printStackTrace()
-  }
-    
-    
+    } catch {
+      case cce: ClassCastException =>  cce.printStackTrace()
+      case e:   Exception =>           e.printStackTrace()
+    }
   }
 
   // TODO get this code to work properly. System.exit isn't really exiting.
