@@ -1,20 +1,20 @@
 package com.devdaily.sarah.actors
 
 import scala.actors._
+import scala.collection.mutable.ListBuffer
 import edu.cmu.sphinx.frontend.util.Microphone
-import java.util._
 import collection.JavaConversions._
+import java.util._
 import java.io.IOException
 import java.io.File
 import javax.script.ScriptEngineManager
 import javax.script.ScriptException
 import edu.cmu.sphinx.recognizer.Recognizer
-import com.devdaily.sarah._
 import javax.sound.sampled._
-import com.weiglewilczek.slf4s.Logging
-import com.weiglewilczek.slf4s.Logger
-import scala.collection.mutable.ListBuffer
-import com.devdaily.sarah.plugins._
+import _root_.com.weiglewilczek.slf4s.Logging
+import _root_.com.weiglewilczek.slf4s.Logger
+import _root_.com.devdaily.sarah._
+import _root_.com.devdaily.sarah.plugins._
 
 /**
  * This actor has the responsibility of running whatever command it is given.
