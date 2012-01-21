@@ -13,6 +13,8 @@ import com.devdaily.sarah._
 import javax.sound.sampled._
 import com.weiglewilczek.slf4s.Logging
 import com.weiglewilczek.slf4s.Logger
+import scala.collection.mutable.ListBuffer
+import com.devdaily.sarah.plugins._
 
 /**
  * This actor has the responsibility of running whatever command it is given.
@@ -25,6 +27,19 @@ class Brain(sarah: Sarah, microphone:Microphone, recognizer:Recognizer, var earB
 extends Actor
 with Logging
 {
+  
+  // plugin support
+  // TODO cleanup once i get actor support working
+  private val pluginModules = new ListBuffer[SarahPlugin]
+
+  def addPluginModule(plugin: SarahPlugin) {
+    pluginModules += plugin
+  }
+  
+  def removePluginModule(plugin: SarahPlugin) {
+    pluginModules -= plugin
+  }
+  
 
   val randomizer = new Random(56)
   val currentDirectory = System.getProperty("user.dir")

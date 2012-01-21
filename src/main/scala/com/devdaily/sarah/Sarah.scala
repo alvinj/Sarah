@@ -3,6 +3,7 @@ package com.devdaily.sarah
 import java.io._
 import java.util._
 import com.devdaily.sarah.agents._
+import com.devdaily.sarah.plugins._
 import edu.cmu.sphinx.frontend.util.Microphone
 import edu.cmu.sphinx.jsgf.JSGFGrammar
 import edu.cmu.sphinx.linguist.dictionary.Word
@@ -62,10 +63,21 @@ class Sarah {
     brain.start
     ears.start
   
-    // TODO use reflection to load actors like this
-    val currentTimeActor = new CurrentTimeActor(brain); currentTimeActor.start
+    // TODO - PLUGINS
     
-    ears ! "Hello, Al"
+    try {
+    var classLoader = new java.net.URLClassLoader(Array(new File("/Users/al/Projects/Scala/SarahHourlyChime/deploy/HourlyChime.jar").toURI.toURL),
+      this.getClass.getClassLoader)
+    var pluginInstance:SarahActorBasedPlugin = classLoader.loadClass("com.devdaily.sarah.plugin.hourlychime.HourlyChimePlugin").newInstance.asInstanceOf[SarahActorBasedPlugin]
+    
+    pluginInstance.connectToBrain(brain)
+    pluginInstance.start
+  } catch {
+    case cce: ClassCastException =>  cce.printStackTrace()
+    case e:   Exception =>           e.printStackTrace()
+  }
+    
+    
   }
 
   // TODO get this code to work properly. System.exit isn't really exiting.

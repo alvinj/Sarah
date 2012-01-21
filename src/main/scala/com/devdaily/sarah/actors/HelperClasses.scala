@@ -11,11 +11,6 @@ case class MessageFromEars(textFromUser: String)
 case class MessageFromBrain(message: String)
 
 /**
- * A helper class to request that the Brain say the given string.
- */
-case class PleaseSay(textToSay: String)
-
-/**
  * Used to send a "die" message to the actors.
  */
 case class Die
