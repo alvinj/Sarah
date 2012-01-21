@@ -2,6 +2,10 @@
 
 grammar hello;
 
+public <EXCUSE_ME> = excuse me;
+public <MERRY_XMAS> = merry christmas;
+public <HAPPY_HO> = happy holidays;
+
 // commands with hard-coded responses
 public <GOTO_SLEEP>     = [computer] go to sleep;
 public <WAKE_UP>        = wake up [computer];

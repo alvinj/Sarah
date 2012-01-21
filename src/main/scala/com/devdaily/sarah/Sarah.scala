@@ -1,18 +1,22 @@
 package com.devdaily.sarah
 
-import java.io._;
-import java.util._;
+import java.io._
+import java.util._
 import com.devdaily.sarah.agents._
-
-import edu.cmu.sphinx.frontend.util.Microphone;
-import edu.cmu.sphinx.jsgf.JSGFGrammar;
-import edu.cmu.sphinx.linguist.dictionary.Word;
-import edu.cmu.sphinx.linguist.language.grammar.GrammarArc;
-import edu.cmu.sphinx.linguist.language.grammar.GrammarNode;
-import edu.cmu.sphinx.recognizer.Recognizer;
-import edu.cmu.sphinx.result.Result;
-import edu.cmu.sphinx.util.props.ConfigurationManager;
+import edu.cmu.sphinx.frontend.util.Microphone
+import edu.cmu.sphinx.jsgf.JSGFGrammar
+import edu.cmu.sphinx.linguist.dictionary.Word
+import edu.cmu.sphinx.linguist.language.grammar.GrammarArc
+import edu.cmu.sphinx.linguist.language.grammar.GrammarNode
+import edu.cmu.sphinx.recognizer.Recognizer
+import edu.cmu.sphinx.result.Result
+import edu.cmu.sphinx.util.props.ConfigurationManager
 import actors._
+import scala.xml._
+import collection.Map
+import collection.Traversable
+import com.devdaily.sarah.utils.SystemProcessRunner
+
 
 /**
  * I'm going through some extra work in this file for two reasons.

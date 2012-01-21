@@ -15,11 +15,15 @@ import java.util.Date
 class Ears(microphone:Microphone, recognizer:Recognizer, var earBrainIntermediary: EarBrainIntermediary) extends Actor {
 
   def act() {
-    println("Entered Ears::act")
+    println("(Ears) Entered Ears::act")
     while (true) {
       val whatIThinkThePersonSaid = recognizer.recognize().getBestFinalResultNoFiller()
-      println("\n(Ears) ears heard this: " + whatIThinkThePersonSaid)
-      earBrainIntermediary ! MessageFromEars(whatIThinkThePersonSaid)
+      if (whatIThinkThePersonSaid.trim() != "") {
+        println("(Ears) ears heard this: " + whatIThinkThePersonSaid)
+        earBrainIntermediary ! MessageFromEars(whatIThinkThePersonSaid)
+      } else {
+        println("(Ears) ears heard a noise, but couldn't interpret it")
+      }
     }
   
   }  

@@ -11,6 +11,9 @@ import javax.script.ScriptException
 import edu.cmu.sphinx.recognizer.Recognizer
 import com.devdaily.sarah._
 
+// working on microphone
+import javax.sound.sampled._
+
 /**
  * This actor has the responsibility of running whatever command it is given.
  * If necessary, the Brain will also tell the Mouth what to say, so when
@@ -25,7 +28,7 @@ class Brain(sarah: Sarah, microphone:Microphone, recognizer:Recognizer, var earB
   var inSleepMode = false
   val SLEEP_AFTER_SPEAKING            = 1500
   val SLEEP_AFTER_APPLESCRIPT_COMMAND = 1500
-  val SLEEP_SHORT_PAUSE               = 250
+  val SLEEP_SHORT_PAUSE               = 3000
   
   // map(sentence, appleScriptKey)
   var phraseCommandMapFiles:Array[String] = null
@@ -40,20 +43,20 @@ class Brain(sarah: Sarah, microphone:Microphone, recognizer:Recognizer, var earB
 
   def act() {
     loop {
-      println("\nThe Brain is READY\n")
+      println("\n\n" + "+-------------------------------+")
+      println(         "|       THE BRAIN IS READY      |")
+      println(         "+-------------------------------+" + "\n")
       react {
         case whatPersonSaid: String =>  
-             println("(Brain) about to handle voice command: " + whatPersonSaid)
+             println("(Brain) about to handle voice command: \"" + whatPersonSaid + "\"")
              handleVoiceCommand(whatPersonSaid)
              shortPause
-             println("(Brain) handled voice command: " + whatPersonSaid)
              println("(Brain) telling ears to listen again")
              sendMessageToIntermediary(MessageFromBrain("START LISTENING"))
         case pleaseSay: PleaseSay => 
-             println("(Brain) got a PleaseSay request: " + pleaseSay.textToSay)
+             println("(Brain) got a PleaseSay request: \"" + pleaseSay.textToSay + "\"")
              println("(Brain) telling intermediary to stop listening")
              sendMessageToIntermediary(MessageFromBrain("STOP LISTENING"))
-             println("(Brain) speaking text: " + pleaseSay.textToSay)
              speak(pleaseSay.textToSay)
              shortPause
              println("(Brain) telling intermediary to start listening")
@@ -69,24 +72,63 @@ class Brain(sarah: Sarah, microphone:Microphone, recognizer:Recognizer, var earB
 
   def sendMessageToIntermediary(message: MessageFromBrain) {
     earBrainIntermediary ! message
-    shortPause
+    //shortPause
   }
   
   def shortPause {
     Utils.sleep(SLEEP_SHORT_PAUSE)
+    // TODO this isn't the right place for this, just testing
+    microphone.clear
   }
+  
+  def turnMicOff() {
+//    println("(Brain) Turning the Mic OFF" + System.currentTimeMillis())
+    //microphone.stopRecording()
+    //val info = new DataLine.Info(TargetDataLine.asInstanceOf[TargetDataLine], format)
+//    val info = new DataLine.Info(classOf[TargetDataLine], null)
+//    if (AudioSystem.isLineSupported(Port.Info.MICROPHONE)) 
+//    {
+//      try {
+//        val line = AudioSystem.getLine(Port.Info.MICROPHONE).asInstanceOf[Port]
+//        line.close
+//      } catch {
+//        case e: LineUnavailableException => println("Tried to close mic, exception happened:")
+//                e.printStackTrace()
+//      }
+//    }
+  }
+  
+  def turnMicOn() {
+    //microphone.startRecording()
+//    println("(Brain) Turning the Mic ON: " + System.currentTimeMillis())
+//    if (AudioSystem.isLineSupported(Port.Info.MICROPHONE)) 
+//    {
+//      try {
+//        val line = AudioSystem.getLine(Port.Info.MICROPHONE).asInstanceOf[Port]
+//        line.open
+//      } catch {
+//        case e: LineUnavailableException => println("Tried to close mic, exception happened:")
+//                e.printStackTrace()
+//      }
+//    }
+  }
+  
   
   /**
    * A function to speak a string of text to the user.
    * This function replaces the former Mouth class.
    */
   def speak(textToSpeak: String) {
-    println("Sarah is about to say: " + textToSpeak)
+    println("(Brain) ENTERED Brain::speak FUNCTION")
+    println("(Brain)    speak: Sarah is about to say: " + textToSpeak)
+    turnMicOff()
     ComputerVoice.speak(textToSpeak)
-    println("after ComputerVoice.speak, about to sleep")
+    println("(Brain)    speak: after ComputerVoice.speak, about to sleep")
     Utils.sleep(SLEEP_AFTER_SPEAKING)
-    println("after sleep(1000)")
+    println("(Brain)    speak: after sleep pause")
+    turnMicOn()
     microphone.clear
+    println("(Brain) LEAVING Brain::speak FUNCTION")
   }
   
   /**
@@ -94,18 +136,21 @@ class Brain(sarah: Sarah, microphone:Microphone, recognizer:Recognizer, var earB
    * (This is currently just a wrapper around a string.)
    */
   def runAppleScriptCommand(command: String) {
-    println("(Brain) Entered runAppleScriptCommand")
+    println("(Brain) ENTERED Brain::runAppleScriptCommand FUNCTION")
+    turnMicOff()
     val scriptEngineManager = new ScriptEngineManager
     val appleScriptEngine = scriptEngineManager.getEngineByName("AppleScript")
     try {
       // TODO working here; "say" command may be executed in a script
-      println("(Brain) calling appleScriptEngine.eval(command)")
+      println("(Brain)    calling appleScriptEngine.eval(command)")
       appleScriptEngine.eval(command)
       Utils.sleep(SLEEP_AFTER_APPLESCRIPT_COMMAND)
       microphone.clear
     } catch {
       case e: ScriptException => e.printStackTrace
     }
+    turnMicOn()
+    println("(Brain) LEAVING Brain::runAppleScriptCommand FUNCTION")
   }
 
   // handle the text the computer thinks the user said
@@ -249,7 +294,7 @@ class Brain(sarah: Sarah, microphone:Microphone, recognizer:Recognizer, var earB
   }
 
   def printMode() {
-    System.out.format ("ListeningMode:        %s\n", if (inSleepMode) "QUIET/SLEEP" else "NORMAL")
+    System.out.format ("(Brain) ListeningMode:        %s\n", if (inSleepMode) "QUIET/SLEEP" else "NORMAL")
   }  
   
   def loadAllUserConfigurationFilesOrDie() {

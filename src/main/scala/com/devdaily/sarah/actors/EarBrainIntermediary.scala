@@ -33,7 +33,7 @@ class EarBrainIntermediary(brain: Brain, ears: Ears) extends Actor {
             brain ! message.textFromUser
           }
           else {
-            println("(Intermediary) NOT listening to user, not sending this text to brain: " + message.textFromUser)
+            println("(Intermediary) *IGNORING USER*, NOT sending this text to brain: " + message.textFromUser)
           }
         //
         // TODO replace these strings with constants

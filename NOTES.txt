@@ -1,0 +1,21 @@
+
+---++ Scala/Dispatch OAuth
+
+Dispatch OAuth examples:
+
+   * https://gist.github.com/437512
+   * http://richard.dallaway.com/databinder-dispatch-for-http-services
+
+The URL that got me started onto Dispatch for a REST client:
+
+   * http://aloiscochard.blogspot.com/2011/05/simple-rest-web-service-client-in-scala.html
+
+The Dispatch URL:
+
+   * http://dispatch.databinder.net/
+
+---++ 1/12/2012
+
+   * I left off last night calling the Yahoo PHP apps from Sarah to do most of the work.
+   * I either need to use those PHP apps as a web service like this, or ditch them.
+   
