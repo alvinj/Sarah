@@ -10,9 +10,9 @@ import javax.script.ScriptEngineManager
 import javax.script.ScriptException
 import edu.cmu.sphinx.recognizer.Recognizer
 import com.devdaily.sarah._
-
-// working on microphone
 import javax.sound.sampled._
+import com.weiglewilczek.slf4s.Logging
+import com.weiglewilczek.slf4s.Logger
 
 /**
  * This actor has the responsibility of running whatever command it is given.
@@ -21,7 +21,10 @@ import javax.sound.sampled._
  * run iTunes, and then it will do whatever it needs to do to run
  * iTunes.
  */
-class Brain(sarah: Sarah, microphone:Microphone, recognizer:Recognizer, var earBrainIntermediary: EarBrainIntermediary) extends Actor {
+class Brain(sarah: Sarah, microphone:Microphone, recognizer:Recognizer, var earBrainIntermediary: EarBrainIntermediary) 
+extends Actor
+with Logging
+{
 
   val randomizer = new Random(56)
   val currentDirectory = System.getProperty("user.dir")
@@ -40,32 +43,37 @@ class Brain(sarah: Sarah, microphone:Microphone, recognizer:Recognizer, var earB
   // these need to be initialized
   val allVoiceCommands = new ArrayList[VoiceCommand]
   var phraseToCommandMap = new HashMap[String,String]
+  
+  val log = Logger("Brain")
 
   def act() {
     loop {
-      println("\n\n" + "+-------------------------------+")
-      println(         "|       THE BRAIN IS READY      |")
-      println(         "+-------------------------------+" + "\n")
+      log.info("THE BRAIN IS READY")
+      log.info("")
+      log.info("+-------------------------------+")
+      log.info("|       THE BRAIN IS READY      |")
+      log.info("+-------------------------------+")
+      log.info("")
       react {
         case whatPersonSaid: String =>  
-             println("(Brain) about to handle voice command: \"" + whatPersonSaid + "\"")
+             log.info("(Brain) about to handle voice command: \"" + whatPersonSaid + "\"")
              handleVoiceCommand(whatPersonSaid)
              shortPause
-             println("(Brain) telling ears to listen again")
+             log.info("(Brain) telling ears to listen again")
              sendMessageToIntermediary(MessageFromBrain("START LISTENING"))
         case pleaseSay: PleaseSay => 
-             println("(Brain) got a PleaseSay request: \"" + pleaseSay.textToSay + "\"")
-             println("(Brain) telling intermediary to stop listening")
+             log.info("(Brain) got a PleaseSay request: \"" + pleaseSay.textToSay + "\"")
+             log.info("(Brain) telling intermediary to stop listening")
              sendMessageToIntermediary(MessageFromBrain("STOP LISTENING"))
              speak(pleaseSay.textToSay)
              shortPause
-             println("(Brain) telling intermediary to start listening")
+             log.info("(Brain) telling intermediary to start listening")
              sendMessageToIntermediary(MessageFromBrain("START LISTENING"))
         case Die =>
-             println("Brain got Die message")
+             log.info("Brain got Die message")
              exit
         case unknown => 
-             println("(Brain) got an unknown request, ignoring it.")
+             log.info("(Brain) got an unknown request, ignoring it.")
       }
     }
   }
@@ -82,7 +90,7 @@ class Brain(sarah: Sarah, microphone:Microphone, recognizer:Recognizer, var earB
   }
   
   def turnMicOff() {
-//    println("(Brain) Turning the Mic OFF" + System.currentTimeMillis())
+//    log.info("(Brain) Turning the Mic OFF" + System.currentTimeMillis())
     //microphone.stopRecording()
     //val info = new DataLine.Info(TargetDataLine.asInstanceOf[TargetDataLine], format)
 //    val info = new DataLine.Info(classOf[TargetDataLine], null)
@@ -92,7 +100,7 @@ class Brain(sarah: Sarah, microphone:Microphone, recognizer:Recognizer, var earB
 //        val line = AudioSystem.getLine(Port.Info.MICROPHONE).asInstanceOf[Port]
 //        line.close
 //      } catch {
-//        case e: LineUnavailableException => println("Tried to close mic, exception happened:")
+//        case e: LineUnavailableException => log.info("Tried to close mic, exception happened:")
 //                e.printStackTrace()
 //      }
 //    }
@@ -100,14 +108,14 @@ class Brain(sarah: Sarah, microphone:Microphone, recognizer:Recognizer, var earB
   
   def turnMicOn() {
     //microphone.startRecording()
-//    println("(Brain) Turning the Mic ON: " + System.currentTimeMillis())
+//    log.info("(Brain) Turning the Mic ON: " + System.currentTimeMillis())
 //    if (AudioSystem.isLineSupported(Port.Info.MICROPHONE)) 
 //    {
 //      try {
 //        val line = AudioSystem.getLine(Port.Info.MICROPHONE).asInstanceOf[Port]
 //        line.open
 //      } catch {
-//        case e: LineUnavailableException => println("Tried to close mic, exception happened:")
+//        case e: LineUnavailableException => log.info("Tried to close mic, exception happened:")
 //                e.printStackTrace()
 //      }
 //    }
@@ -119,16 +127,16 @@ class Brain(sarah: Sarah, microphone:Microphone, recognizer:Recognizer, var earB
    * This function replaces the former Mouth class.
    */
   def speak(textToSpeak: String) {
-    println("(Brain) ENTERED Brain::speak FUNCTION")
-    println("(Brain)    speak: Sarah is about to say: " + textToSpeak)
+    log.info("(Brain) ENTERED Brain::speak FUNCTION")
+    log.info("(Brain)    speak: Sarah is about to say: " + textToSpeak)
     turnMicOff()
     ComputerVoice.speak(textToSpeak)
-    println("(Brain)    speak: after ComputerVoice.speak, about to sleep")
+    log.info("(Brain)    speak: after ComputerVoice.speak, about to sleep")
     Utils.sleep(SLEEP_AFTER_SPEAKING)
-    println("(Brain)    speak: after sleep pause")
+    log.info("(Brain)    speak: after sleep pause")
     turnMicOn()
     microphone.clear
-    println("(Brain) LEAVING Brain::speak FUNCTION")
+    log.info("(Brain) LEAVING Brain::speak FUNCTION")
   }
   
   /**
@@ -136,13 +144,13 @@ class Brain(sarah: Sarah, microphone:Microphone, recognizer:Recognizer, var earB
    * (This is currently just a wrapper around a string.)
    */
   def runAppleScriptCommand(command: String) {
-    println("(Brain) ENTERED Brain::runAppleScriptCommand FUNCTION")
+    log.info("(Brain) ENTERED Brain::runAppleScriptCommand FUNCTION")
     turnMicOff()
     val scriptEngineManager = new ScriptEngineManager
     val appleScriptEngine = scriptEngineManager.getEngineByName("AppleScript")
     try {
       // TODO working here; "say" command may be executed in a script
-      println("(Brain)    calling appleScriptEngine.eval(command)")
+      log.info("(Brain)    calling appleScriptEngine.eval(command)")
       appleScriptEngine.eval(command)
       Utils.sleep(SLEEP_AFTER_APPLESCRIPT_COMMAND)
       microphone.clear
@@ -150,7 +158,7 @@ class Brain(sarah: Sarah, microphone:Microphone, recognizer:Recognizer, var earB
       case e: ScriptException => e.printStackTrace
     }
     turnMicOn()
-    println("(Brain) LEAVING Brain::runAppleScriptCommand FUNCTION")
+    log.info("(Brain) LEAVING Brain::runAppleScriptCommand FUNCTION")
   }
 
   // handle the text the computer thinks the user said
@@ -162,19 +170,19 @@ class Brain(sarah: Sarah, microphone:Microphone, recognizer:Recognizer, var earB
     loadAllUserConfigurationFilesOrDie
 
     if (handleSpecialVoiceCommands(textTheUserSaid)) {
-      println("(Brain) Handled a special voice command, returning.")
+      log.info("(Brain) Handled a special voice command, returning.")
       return
     }
 
     // if the command phrase is in the map, do some work
     if (phraseToCommandMap.containsKey(textTheUserSaid)) {
       // handle whatever the user said
-      println("(Brain) handleVoiceCommand, found your phrase in the map: " + textTheUserSaid)
+      log.info("(Brain) handleVoiceCommand, found your phrase in the map: " + textTheUserSaid)
       handleUserDefinedVoiceCommand(textTheUserSaid)
       return
     }
     else {
-      System.out.println("Sorry, could not handle command.")
+      log.info("Sorry, could not handle command.")
     }
   }
 
@@ -185,7 +193,7 @@ class Brain(sarah: Sarah, microphone:Microphone, recognizer:Recognizer, var earB
    */
   def handleSpecialVoiceCommands(textTheUserSaid: String):Boolean = {
     if (textTheUserSaid.equals("thanks") || textTheUserSaid.trim().equals("")) { 
-        println("(Brain) I think you said 'thanks', I'm going to ignore that.")
+        log.info("(Brain) I think you said 'thanks', I'm going to ignore that.")
         return true
     }
 
@@ -219,7 +227,7 @@ class Brain(sarah: Sarah, microphone:Microphone, recognizer:Recognizer, var earB
    * List all the voice command the user can say.
    */
   def listAvailableVoiceCommands() {
-    println("(Brain) Entered Brain::listAvailableVoiceCommands")
+    log.info("(Brain) Entered Brain::listAvailableVoiceCommands")
     loadAllUserConfigurationFilesOrDie
     allVoiceCommands.foreach{ voiceCommand =>
       val voiceCommandKey = voiceCommand.getCommand()
@@ -232,9 +240,9 @@ class Brain(sarah: Sarah, microphone:Microphone, recognizer:Recognizer, var earB
   }
   
   def handleUserDefinedVoiceCommand(textTheUserSaid: String) {
-    println("(Brain) Entered Brain::handleUserDefinedVoiceCommand")
+    log.info("(Brain) Entered Brain::handleUserDefinedVoiceCommand")
     val commandFileKey = phraseToCommandMap.get(textTheUserSaid)  // ex: COMPUTER, JUST_CHECKING
-    println("(Brain) Brain::handleUserDefinedVoiceCommand, commandFileKey = " + commandFileKey)
+    log.info("(Brain) Brain::handleUserDefinedVoiceCommand, commandFileKey = " + commandFileKey)
     // foreach is enabled by importing JavaConversions._ above
     allVoiceCommands.foreach{ voiceCommand =>
       val voiceCommandKey = voiceCommand.getCommand()
@@ -247,7 +255,7 @@ class Brain(sarah: Sarah, microphone:Microphone, recognizer:Recognizer, var earB
         else
         {
           printMode()
-          System.out.println("In sleep mode, ignoring command.")
+          log.info("In sleep mode, ignoring command.")
           return
         }
       }
@@ -261,8 +269,8 @@ class Brain(sarah: Sarah, microphone:Microphone, recognizer:Recognizer, var earB
    * because of multithreading concerns.
    */
   def runUserDefinedCommand(vc: VoiceCommand) {
-    println("(Brain) vc.command:     " + vc.getCommand())
-    println("(Brain) vc.applescript: " + vc.getAppleScript())
+    log.info("(Brain) vc.command:     " + vc.getCommand())
+    log.info("(Brain) vc.applescript: " + vc.getAppleScript())
     var appleScriptCommand = vc.getAppleScript()
     // split up multiline commands:
     // tell app iTunes to play next track | say "Next track"
@@ -304,7 +312,7 @@ class Brain(sarah: Sarah, microphone:Microphone, recognizer:Recognizer, var earB
     // (appleScriptKey, appleScriptToExecute)
     commandFiles = SarahJavaHelper.getAllFilenames(currentDirectory, "commands")
     if (commandFiles.length == 0) {
-      System.err.println("Could not find any command files, aborting.")
+      log.error("Could not find any command files, aborting.")
       System.exit(1)
     }
     
@@ -312,7 +320,7 @@ class Brain(sarah: Sarah, microphone:Microphone, recognizer:Recognizer, var earB
     // load the map of sentences to commands (sentence, appleScriptKey)
     phraseCommandMapFiles = SarahJavaHelper.getAllFilenames(currentDirectory, "c2p")
     if (phraseCommandMapFiles.length == 0) {
-      System.err.println("Could not find any phrase command map files, aborting.")
+      log.error("Could not find any phrase command map files, aborting.")
       System.exit(1)
     }
 
@@ -330,7 +338,7 @@ class Brain(sarah: Sarah, microphone:Microphone, recognizer:Recognizer, var earB
       }
       catch
       {
-        case e:IOException => println("Error trying to load voice commands.")
+        case e:IOException => log.info("Error trying to load voice commands.")
                               e.printStackTrace()
       }
     }

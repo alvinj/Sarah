@@ -15,7 +15,6 @@ import actors._
 import scala.xml._
 import collection.Map
 import collection.Traversable
-import com.devdaily.sarah.utils.SystemProcessRunner
 
 
 /**
