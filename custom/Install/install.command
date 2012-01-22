@@ -1,10 +1,13 @@
 
-mkdir -p ~/Library/Application\ Support/devdaily.com/Sarah
-mkdir -p ~/Library/Logs/devdaily.com/Sarah
+mkdir -p ~/.sarah/data
+mkdir -p ~/.sarah/logs
+
+# TODO need to figure out what data this script is being run from
+#      before i can issue the "cp" command below.
 
 echo "DIR = $PWD"
 set
 
-#cp install-data/* ~/Library/Application\ Support/devdaily.com/Sarah
+#cp -r install-data/* ~/.sarah/data
 
 
