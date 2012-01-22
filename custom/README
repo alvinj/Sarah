@@ -1,0 +1,25 @@
+
+HOW TO BUILD THE MAC APP
+------------------------
+
+1) First run "sbt compile" or "sbt run" in the directory above this.
+   That creates the ".class" files we need from the Scala classes.
+
+2) Come into this directory and run "ant". If it all works properly,
+   the Mac app will be in the "release" subdirectory of this directory.
+
+
+HOW TO INSTALL SARAH
+--------------------
+
+* At this time the install files are in the Install subdirectory of this directory.
+  This is still a work in progress, but I'm aiming to put Sarah's data files in this dir:
+  $HOME/Library/Application Support/devdaily.com/Sarah
+
+
+NOTES
+-----
+
+NOTE: Make sure the jarbundler jar file is in the ant/lib folder. I've copied it to ant-1.6.5 and ant-1.7.0.
+
+

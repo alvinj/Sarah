@@ -39,10 +39,8 @@ with Logging
   def removePluginModule(plugin: SarahPlugin) {
     pluginModules -= plugin
   }
-  
 
   val randomizer = new Random(56)
-  val currentDirectory = System.getProperty("user.dir")
   var inSleepMode = false
   val SLEEP_AFTER_SPEAKING            = 1500
   val SLEEP_AFTER_APPLESCRIPT_COMMAND = 1500
@@ -104,38 +102,6 @@ with Logging
     microphone.clear
   }
   
-  def turnMicOff() {
-//    log.info("(Brain) Turning the Mic OFF" + System.currentTimeMillis())
-    //microphone.stopRecording()
-    //val info = new DataLine.Info(TargetDataLine.asInstanceOf[TargetDataLine], format)
-//    val info = new DataLine.Info(classOf[TargetDataLine], null)
-//    if (AudioSystem.isLineSupported(Port.Info.MICROPHONE)) 
-//    {
-//      try {
-//        val line = AudioSystem.getLine(Port.Info.MICROPHONE).asInstanceOf[Port]
-//        line.close
-//      } catch {
-//        case e: LineUnavailableException => log.info("Tried to close mic, exception happened:")
-//                e.printStackTrace()
-//      }
-//    }
-  }
-  
-  def turnMicOn() {
-    //microphone.startRecording()
-//    log.info("(Brain) Turning the Mic ON: " + System.currentTimeMillis())
-//    if (AudioSystem.isLineSupported(Port.Info.MICROPHONE)) 
-//    {
-//      try {
-//        val line = AudioSystem.getLine(Port.Info.MICROPHONE).asInstanceOf[Port]
-//        line.open
-//      } catch {
-//        case e: LineUnavailableException => log.info("Tried to close mic, exception happened:")
-//                e.printStackTrace()
-//      }
-//    }
-  }
-  
   
   /**
    * A function to speak a string of text to the user.
@@ -144,12 +110,10 @@ with Logging
   def speak(textToSpeak: String) {
     log.info("(Brain) ENTERED Brain::speak FUNCTION")
     log.info("(Brain)    speak: Sarah is about to say: " + textToSpeak)
-    turnMicOff()
     ComputerVoice.speak(textToSpeak)
     log.info("(Brain)    speak: after ComputerVoice.speak, about to sleep")
     Utils.sleep(SLEEP_AFTER_SPEAKING)
     log.info("(Brain)    speak: after sleep pause")
-    turnMicOn()
     microphone.clear
     log.info("(Brain) LEAVING Brain::speak FUNCTION")
   }
@@ -160,7 +124,6 @@ with Logging
    */
   def runAppleScriptCommand(command: String) {
     log.info("(Brain) ENTERED Brain::runAppleScriptCommand FUNCTION")
-    turnMicOff()
     val scriptEngineManager = new ScriptEngineManager
     val appleScriptEngine = scriptEngineManager.getEngineByName("AppleScript")
     try {
@@ -172,7 +135,6 @@ with Logging
     } catch {
       case e: ScriptException => e.printStackTrace
     }
-    turnMicOn()
     log.info("(Brain) LEAVING Brain::runAppleScriptCommand FUNCTION")
   }
 
@@ -325,7 +287,7 @@ with Logging
     if (phraseToCommandMap != null) phraseToCommandMap.clear()
 
     // (appleScriptKey, appleScriptToExecute)
-    commandFiles = SarahJavaHelper.getAllFilenames(currentDirectory, "commands")
+    commandFiles = SarahJavaHelper.getAllFilenames(sarah.getDataFileDirectory, "commands")
     if (commandFiles.length == 0) {
       log.error("Could not find any command files, aborting.")
       System.exit(1)
@@ -333,19 +295,19 @@ with Logging
     
     loadAllVoiceCommands()
     // load the map of sentences to commands (sentence, appleScriptKey)
-    phraseCommandMapFiles = SarahJavaHelper.getAllFilenames(currentDirectory, "c2p")
+    phraseCommandMapFiles = SarahJavaHelper.getAllFilenames(sarah.getDataFileDirectory, "c2p")
     if (phraseCommandMapFiles.length == 0) {
       log.error("Could not find any phrase command map files, aborting.")
       System.exit(1)
     }
 
-    SarahJavaHelper.loadAllSentenceToCommandMaps(phraseCommandMapFiles, ":", currentDirectory, phraseToCommandMap);
+    SarahJavaHelper.loadAllSentenceToCommandMaps(phraseCommandMapFiles, ":", sarah.getDataFileDirectory, phraseToCommandMap);
   }
 
   
   def loadAllVoiceCommands() {
     for (cmdFile <- commandFiles) {
-      var canonFilename = currentDirectory + File.separator + cmdFile
+      var canonFilename = sarah.getDataFileDirectory + File.separator + cmdFile
       try
       {
         var commands = SarahJavaHelper.getCurrentVoiceCommands(canonFilename, ":")

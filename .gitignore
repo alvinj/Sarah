@@ -6,5 +6,5 @@
 .classpath
 .project
 .settings
-/deploy/jar
-/deploy/release
+/custom/release
+/custom/jar

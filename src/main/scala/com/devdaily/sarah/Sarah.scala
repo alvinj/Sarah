@@ -55,6 +55,19 @@ class Sarah {
   val EXIT_CODE_NOT_RUNNING_ON_MAC = 2
   val INITIAL_FRAME_COLOR = new Color(170, 194, 156)
 
+  // TODO see Hyde SoundFileController for examples of copying files
+  // filesystem variables
+  val REL_DATA_DIR          = ".sarah/data"
+  val REL_LOGFILE_DIRECTORY = ".sarah/logs"
+  val JSGF_FILENAME         = "sarah.config.xml"
+  val LOG_FILENAME          = "Sarah.log"
+  val FILE_PATH_SEPARATOR   = System.getProperty("file.separator")
+  val USER_HOME_DIR         = System.getProperty("user.home")
+  val CANON_DATA_DIR        = USER_HOME_DIR + FILE_PATH_SEPARATOR + REL_DATA_DIR
+  val SARAH_CONFIG_FILE     = CANON_DATA_DIR + FILE_PATH_SEPARATOR + JSGF_FILENAME
+  val CANON_LOGFILE_DIR     = USER_HOME_DIR + FILE_PATH_SEPARATOR + REL_LOGFILE_DIRECTORY 
+  val CANON_DEBUG_FILENAME  = CANON_LOGFILE_DIR + FILE_PATH_SEPARATOR + LOG_FILENAME
+  
   //dieIfNotRunningOnMacOsX
 
   val mainFrame = new MainFrame
@@ -63,7 +76,7 @@ class Sarah {
   // TODO - merge voice command files
   mergeAllVoiceCommandFiles
 
-  val cm = new ConfigurationManager("sarah.config.xml")
+  val cm = new ConfigurationManager(SARAH_CONFIG_FILE)
   val recognizer = cm.lookup("recognizer").asInstanceOf[Recognizer]
   val microphone = cm.lookup("microphone").asInstanceOf[Microphone]
   recognizer.allocate
@@ -88,6 +101,10 @@ class Sarah {
   
     loadPlugins
     
+  }
+  
+  def getDataFileDirectory: String = {
+    return CANON_DATA_DIR
   }
   
   /**

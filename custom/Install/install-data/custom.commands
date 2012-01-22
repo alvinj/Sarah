@@ -1,0 +1,12 @@
+
+# TODO
+KITCHEN_ON    : say "Turning kitchen lights on"
+KITCHEN_OFF   : say "Turning kitchen lights off"
+
+FIREPLACE_ON  : say "Turning fireplace on"
+FIREPLACE_OFF : say "Turning fireplace off"
+
+EXCUSE_ME  : say "No worries"
+
+MERRY_XMAS : say "ho ho ho" using "Fred"
+HAPPY_HO   : say "ho ho ho" using "Fred"

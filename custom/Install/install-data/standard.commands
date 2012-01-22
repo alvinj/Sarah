@@ -1,0 +1,39 @@
+# -------------         ------------------     -------------
+# COMMAND LABEL       : WHAT COMPUTER DOES   : OPTIONAL MODE
+# -------------         ------------------     -------------
+ITUNES_PLAY_MUSIC     : tell app "iTunes" to play | say "Playing iTunes"                 : sleepmode
+ITUNES_PAUSE          : tell app "iTunes" to pause | say "iTunes is paused"              : sleepmode
+ITUNES_STOP           : tell app "iTunes" to stop | say "Stopping iTunes"                : sleepmode
+ITUNES_NEXT_TRACK     : tell app "iTunes" to play next track | say "Next track"          : sleepmode
+ITUNES_PREVIOUS_TRACK : tell app "iTunes" to play previous track | say "Previous track"  : sleepmode
+
+PLAY_DVD              : do shell script "osascript $HOME/.sarah/data/scripts/play_dvd.scpt"
+#PAUSE_DVD             : tell application "DVD Player" to pause dvd
+#STOP_DVD              : tell application "DVD Player" to stop dvd
+
+THANK_YOU             : do shell script "osascript $HOME/.sarah/data/scripts/thank_you.scpt"
+
+GOOD_MORNING          : say "Good morning, Al"
+GOOD_AFTERNOON        : say "Buenos dias, Al"
+GOOD_EVENING          : say "Buenos noches"
+GOOD_NIGHT            : say "Good night, Al"
+JUST_CHECKING         : say "Okay"
+DATE                  : say (date string of (current date))
+TIME                  : say (time string of (current date))
+
+WEATHER_CURRENT       : do shell script "osascript $HOME/.sarah/datascripts/weather-current.scpt"
+
+# works
+COMPUTER : do shell script "osascript $HOME/.sarah/data/scripts/yes.scpt"
+
+# what the computer should say when an exception occurs
+SYSTEM_ERROR_MSG       : say "Problem"
+
+
+# HARD-CODED RESPONSES (DON'T NEED COMMANDS FOR THESE)
+# ----------------------------------------------------
+# GOTO_SLEEP
+# WAKE_UP
+# GOODBYE
+# PLEASE_LISTEN
+# WHAT_CAN_I_SAY
