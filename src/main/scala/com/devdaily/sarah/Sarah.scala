@@ -123,10 +123,12 @@ class Sarah {
     loadPlugins
     
   }
+
+  // TODO probably a better way to do these
+  def getDataFileDirectory = CANON_DATA_DIR
+  def getLogFileDirectory  = CANON_LOGFILE_DIR
+  def getFilePathSeparator = FILE_PATH_SEPARATOR
   
-  def getDataFileDirectory: String = {
-    return CANON_DATA_DIR
-  }
   
   def destroySplashScreen {
     screen.setVisible(false)

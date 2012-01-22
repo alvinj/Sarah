@@ -1,6 +1,7 @@
 package com.devdaily.sarah.actors
 
 import scala.actors._
+import scala.util.Random
 import scala.collection.mutable.ListBuffer
 import edu.cmu.sphinx.frontend.util.Microphone
 import collection.JavaConversions._
@@ -15,6 +16,7 @@ import _root_.com.weiglewilczek.slf4s.Logging
 import _root_.com.weiglewilczek.slf4s.Logger
 import _root_.com.devdaily.sarah._
 import _root_.com.devdaily.sarah.plugins._
+import scala.io.Source
 
 /**
  * This actor has the responsibility of running whatever command it is given.
@@ -31,6 +33,10 @@ with Logging
   // plugin support
   // TODO cleanup once i get actor support working
   private val pluginModules = new ListBuffer[SarahPlugin]
+  
+  val REPLY_TO_THANK_YOU_FILE = "thank_you_replies.data"
+  val REPLY_TO_COMPUTER_FILE  = "computer_replies.data"
+  val SAY_YES_FILE            = "say_yes.data"
 
   def addPluginModule(plugin: SarahPlugin) {
     pluginModules += plugin
@@ -169,9 +175,20 @@ with Logging
    * "shut down". Returns true if the voice command was handled.
    */
   def handleSpecialVoiceCommands(textTheUserSaid: String):Boolean = {
-    if (textTheUserSaid.equals("thanks") || textTheUserSaid.trim().equals("")) { 
-        log.info("(Brain) I think you said 'thanks', I'm going to ignore that.")
-        return true
+    
+    if (textTheUserSaid.trim().equals("")) { 
+      log.info("(Brain) Got a blank string from Ears, ignoring it.")
+      return true
+    }
+
+    if (textTheUserSaid.trim.equals("thanks") || textTheUserSaid.trim.equals("thank you")) { 
+      replyToUserSayingThankYou
+      return true
+    }
+
+    if (textTheUserSaid.trim.equals("computer")) { 
+      replyToUserSayingComputer
+      return true
     }
 
     else if (textTheUserSaid.equals("soy lent green is people") ) {
@@ -198,6 +215,21 @@ with Logging
     }
     
     return false
+  }
+  
+  def replyToUserSayingThankYou {
+    val textToSay = getRandomStringFromFile(sarah.getDataFileDirectory + "/" + REPLY_TO_THANK_YOU_FILE)
+    speak(textToSay)
+  }
+  
+  def replyToUserSayingComputer {
+    val textToSay = getRandomStringFromFile(sarah.getDataFileDirectory + "/" + SAY_YES_FILE)
+    speak(textToSay)
+  }
+  
+  def getRandomStringFromFile(canonicalFilename: String): String = {
+    val options = Source.fromFile(canonicalFilename).getLines.toList
+    return options.get(Random.nextInt(options.length))
   }
   
   /**

@@ -1,16 +1,17 @@
 
 ---++ Short Term
 
-* get Sarah to shut down properly (may not be shutting down b/c i keep running it through sbt)
+* add properties file for things like username, zip code
+* get plugins and plugin api going
+* let the user control the voice that's used
 * create new "current time" request in Scala
 * create new "current date" request in Scala
 * let me change current voice (probably need to issue a Mac 'defaults' or 
     possibly an AppleScript command to do this
-* refactor CurrentTimeActor to be a plugin
-* create a properties file
-  - owner's name (such as for "Hello, Al")
 
 ---++ Long Term
 
+* run all speech text through scala so the ui can know what's being said
+  (need this for animations, shorter pauses)
 * can i reload commands and sarah.gram on each request?
 
