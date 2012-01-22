@@ -22,6 +22,8 @@ import javax.swing.UIManager
 import javax.swing.JFrame
 import java.awt.Toolkit
 import java.awt.Color
+import javax.swing.ImageIcon
+import com.devdaily.splashscreen.SplashScreen
 
 
 /**
@@ -68,21 +70,30 @@ class Sarah {
   val CANON_LOGFILE_DIR     = USER_HOME_DIR + FILE_PATH_SEPARATOR + REL_LOGFILE_DIRECTORY 
   val CANON_DEBUG_FILENAME  = CANON_LOGFILE_DIR + FILE_PATH_SEPARATOR + LOG_FILENAME
   
+  val splashImage = new ImageIcon(classOf[com.devdaily.sarah.Sarah].getResource("sarah-splash-image.png"))
+  var screen = new SplashScreen(splashImage)
+  screen.setLocationRelativeTo(null)
+  screen.setProgressMax(100)
+  screen.setScreenVisible(true)
+  screen.setProgress("Starting SARAH ...", 10)
+
+  screen.setProgress("Finding plugins ...", 15)
+
+  // TODO - merge voice command files
+  screen.setProgress("Merging voice commands ...", 25)
+  mergeAllVoiceCommandFiles
+  
+  
   //dieIfNotRunningOnMacOsX
 
-  val mainFrame = new MainFrame
-  displayMainFrame
-  
-  // TODO - merge voice command files
-  mergeAllVoiceCommandFiles
-
+  screen.setProgress("Connecting to microphone ...", 50)
   val cm = new ConfigurationManager(SARAH_CONFIG_FILE)
   val recognizer = cm.lookup("recognizer").asInstanceOf[Recognizer]
   val microphone = cm.lookup("microphone").asInstanceOf[Microphone]
   recognizer.allocate
-  
   startMicRecordingOrDie(recognizer, microphone)
 
+  screen.setProgress("Starting SARAH's brain ...", 75)
   // i'm passing in nulls here because i don't know a better way to make 'brain'
   // and 'ears' available to me in setter methods. these two objects need to know about
   // each other.
@@ -92,6 +103,16 @@ class Sarah {
   
   brain.earBrainIntermediary = earBrainIntermediary
   ears.earBrainIntermediary = earBrainIntermediary
+
+  screen.setProgress("Starting SARAH's interface ...", 90)
+  destroySplashScreen
+
+  val mainFrame = new MainFrame
+  displayMainFrame
+
+
+  // END constructor
+
 
   def startRunning {
     // start the actor threads
@@ -105,6 +126,11 @@ class Sarah {
   
   def getDataFileDirectory: String = {
     return CANON_DATA_DIR
+  }
+  
+  def destroySplashScreen {
+    screen.setVisible(false)
+    screen = null
   }
   
   /**

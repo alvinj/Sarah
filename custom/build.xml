@@ -40,7 +40,10 @@
   <!-- CREATE JAR -->
   <target name="create-jar" depends="clean">
     <!-- copy the application classes -->
-    <jar basedir="${classes.dir}" jarfile="${jar.dir}/${jar.filename}" manifest="${current.dir}/sarah.manifest"/>
+    <jar basedir="${classes.dir}" 
+         jarfile="${jar.dir}/${jar.filename}" 
+         manifest="${current.dir}/sarah.manifest"/>
+
     <!-- copy the application jars -->
     <copy todir="${jar.dir}">
       <fileset dir="${lib.dir}">
