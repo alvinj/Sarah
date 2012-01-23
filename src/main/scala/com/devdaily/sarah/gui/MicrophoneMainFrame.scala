@@ -1,9 +1,8 @@
-package com.devdaily.sarah
+package com.devdaily.sarah.gui
 
-import javax.swing.JFrame
 import java.awt.Color
 
-class MainFrame extends JFrame {
+class MicrophoneMainFrame extends BaseMainFrame {
 
   def setColor(color: Color) {
     this.getContentPane.setBackground(color)
@@ -11,3 +10,4 @@ class MainFrame extends JFrame {
   }
 
 }
+

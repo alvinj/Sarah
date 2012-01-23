@@ -323,12 +323,14 @@ with Logging
   }
   
   def doGoToSleepActions {
+    sarah.updateUISarahIsSleeping
     inSleepMode = true
     speak("Going to sleep")
     printMode
   }
 
   def doWakeUpActions {
+    sarah.updateUISarahIsListening
     inSleepMode = false
     speak("I'm awake")
     printMode()

@@ -33,6 +33,7 @@ import java.util.logging.FileHandler
 import java.util.logging.Logger
 import com.weiglewilczek.slf4s.Logging
 import com.weiglewilczek.slf4s.Logger
+import com.devdaily.sarah.gui.MicrophoneMainFrameController
 
 
 /**
@@ -130,13 +131,8 @@ class Sarah {
   screen.setProgress("Starting SARAH's interface ...", 90)
   destroySplashScreen
 
-  val headerPanel = new MainFrameHeaderPanel
-  val microphonePanel = new MicrophonePanel(this)
-  val logOutputPanel = new LogOutputPanel
-  val mainFrame = new MainFrame
-  mainFrame.add(headerPanel, BorderLayout.NORTH)
-  mainFrame.add(microphonePanel, BorderLayout.CENTER)
-  mainFrame.add(logOutputPanel, BorderLayout.SOUTH)
+  val mainFrameController = new MicrophoneMainFrameController(this)
+  val mainFrame = mainFrameController.getMainFrame
   displayMainFrame
 
 
@@ -161,28 +157,20 @@ class Sarah {
    * SARAH is speaking, listening, or not listening.
    * -----------------------------------------------
    */
+  def updateUISarahIsSleeping {
+    mainFrameController.updateUISarahIsSleeping
+  }
+
   def updateUISarahIsSpeaking {
-    SwingUtilities.invokeLater(new Runnable() {
-      def run() {
-        microphonePanel.setSarahIsSpeaking
-      }
-    });
+    mainFrameController.updateUISarahIsSpeaking
   }
 
   def updateUISarahIsListening {
-    SwingUtilities.invokeLater(new Runnable() {
-      def run() {
-        microphonePanel.setSarahIsListening
-      }
-    });
+    mainFrameController.updateUISarahIsListening
   }
 
   def updateUISarahIsNotListening {
-    SwingUtilities.invokeLater(new Runnable() {
-      def run() {
-        microphonePanel.setSarahIsNotListening
-      }
-    });
+    mainFrameController.updateUISarahIsNotListening
   }
 
   
