@@ -34,6 +34,7 @@ import java.util.logging.Logger
 import com.weiglewilczek.slf4s.Logging
 import com.weiglewilczek.slf4s.Logger
 import com.devdaily.sarah.gui.MicrophoneMainFrameController
+import com.devdaily.sarah.gui.Hal9000MainFrameController
 
 
 /**
@@ -131,7 +132,8 @@ class Sarah {
   screen.setProgress("Starting SARAH's interface ...", 90)
   destroySplashScreen
 
-  val mainFrameController = new MicrophoneMainFrameController(this)
+  //val mainFrameController = new MicrophoneMainFrameController(this)
+  val mainFrameController = new Hal9000MainFrameController(this)
   val mainFrame = mainFrameController.getMainFrame
   displayMainFrame
 
@@ -378,7 +380,7 @@ class Sarah {
     } catch {
       case e: Exception => // ignore
     }
-    mainFrame.setColor(INITIAL_FRAME_COLOR)
+    //mainFrame.setColor(INITIAL_FRAME_COLOR)
     mainFrame.setUndecorated(true)
     mainFrame.setResizable(true)   // 'true' so user can move window
     makeFrameFullScreen
