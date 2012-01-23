@@ -17,8 +17,6 @@ ITUNES_NEXT_TRACK : next track
 WEATHER_CURRENT   : current weather
 DATE              : what day is it
 TIME              : what time is it
-COMPUTER          : computer
-THANK_YOU         : thank you
 GOOD_MORNING      : good morning
 GOOD_AFTERNOON    : good afternoon
 GOOD_EVENING      : good evening

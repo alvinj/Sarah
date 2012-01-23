@@ -71,9 +71,9 @@ class Sarah {
   val INITIAL_FRAME_COLOR = new Color(170, 194, 156)
 
   // TODO all of these constants probably need to go somewhere else
-  val REL_DATA_DIR          = ".sarah/data"
-  val REL_LOGFILE_DIR       = ".sarah/logs"
-  val REL_PLUGINS_DIR       = ".sarah/plugins"
+  val REL_DATA_DIR          = "Sarah/data"
+  val REL_LOGFILE_DIR       = "Sarah/logs"
+  val REL_PLUGINS_DIR       = "Sarah/plugins"
   val JSGF_FILENAME         = "sarah.config.xml"
   val LOG_FILENAME          = "sarah.log"
   val FILE_PATH_SEPARATOR   = System.getProperty("file.separator")
@@ -291,18 +291,10 @@ class Sarah {
   }
 
   /**
-   * Get a List[String] representing all the sub-directories in the given directory.
+   * Get a list representing all the sub-directories in the given directory.
    */
-  def getListOfSubDirectories(directoryName: String): scala.collection.immutable.List[String] = {
-    val folder = new File(directoryName)
-    val files = folder.listFiles // File[]
-    val dirNames = ArrayBuffer[String]()
-    for (file <- files) {
-      if (file.isDirectory()) {
-        dirNames += file.getName()
-      }
-    }
-    return dirNames.toList
+  def getListOfSubDirectories(directoryName: String): Array[String] = {
+    return (new File(directoryName)).listFiles.filter(_.isDirectory).map(_.getName)
   }
 
   /**

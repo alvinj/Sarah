@@ -3,6 +3,8 @@
 # COMMAND LABEL   : WHAT YOU SAY
 # -------------     ------------
 
+SCOTTY            : scotty
+
 FIREPLACE_ON      : fireplace on
 FIREPLACE_OFF     : fireplace off
 KITCHEN_ON        : kitchen on

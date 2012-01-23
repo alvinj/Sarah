@@ -1,4 +1,6 @@
 
+SCOTTY    : say "I'm giving her all she's got captain" using "Bruce"
+
 # TODO
 KITCHEN_ON    : say "Turning kitchen lights on"
 KITCHEN_OFF   : say "Turning kitchen lights off"

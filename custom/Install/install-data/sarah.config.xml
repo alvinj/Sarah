@@ -92,7 +92,7 @@
     <!-- "sarah" here refers to "sarah.gram" -->
     <component name="jsgfGrammar" type="edu.cmu.sphinx.jsgf.JSGFGrammar">
         <property name="dictionary"      value="dictionary"/>
-        <property name="grammarLocation" value="file:/Users/Al/.sarah/data"/>
+        <property name="grammarLocation" value="file:/Users/Al/Sarah/data"/>
         <property name="grammarName"     value="sarah"/>
         <property name="logMath"         value="logMath"/>
     </component>

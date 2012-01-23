@@ -7,24 +7,25 @@ ITUNES_STOP           : tell app "iTunes" to stop | say "Stopping iTunes"       
 ITUNES_NEXT_TRACK     : tell app "iTunes" to play next track | say "Next track"          : sleepmode
 ITUNES_PREVIOUS_TRACK : tell app "iTunes" to play previous track | say "Previous track"  : sleepmode
 
-PLAY_DVD              : do shell script "osascript $HOME/.sarah/data/scripts/play_dvd.scpt"
+PLAY_DVD              : do shell script "osascript $HOME/Sarah/data/scripts/play_dvd.scpt"
 #PAUSE_DVD             : tell application "DVD Player" to pause dvd
 #STOP_DVD              : tell application "DVD Player" to stop dvd
-
-THANK_YOU             : do shell script "osascript $HOME/.sarah/data/scripts/thank_you.scpt"
 
 GOOD_MORNING          : say "Good morning, Al"
 GOOD_AFTERNOON        : say "Buenos dias, Al"
 GOOD_EVENING          : say "Buenos noches"
 GOOD_NIGHT            : say "Good night, Al"
 JUST_CHECKING         : say "Okay"
+
+# these commands show a little more applescript
 DATE                  : say (date string of (current date))
 TIME                  : say (time string of (current date))
 
-WEATHER_CURRENT       : do shell script "osascript $HOME/.sarah/datascripts/weather-current.scpt"
+# TODO replace this with a plugin module
+WEATHER_CURRENT       : do shell script "osascript $HOME/Sarah/datascripts/weather-current.scpt"
 
-# works
-COMPUTER : do shell script "osascript $HOME/.sarah/data/scripts/yes.scpt"
+# this syntax works, if needed 
+#COMPUTER : do shell script "osascript $HOME/Sarah/data/scripts/yes.scpt"
 
 # what the computer should say when an exception occurs
 SYSTEM_ERROR_MSG       : say "Problem"
@@ -32,8 +33,13 @@ SYSTEM_ERROR_MSG       : say "Problem"
 
 # HARD-CODED RESPONSES (DON'T NEED COMMANDS FOR THESE)
 # ----------------------------------------------------
-# GOTO_SLEEP
-# WAKE_UP
-# GOODBYE
-# PLEASE_LISTEN
-# WHAT_CAN_I_SAY
+# "computer"         used to see if the computer is listening to you
+# "thank you"        when you want to say "thank you" to the computer, it will reply
+# "go to sleep"      puts sarah into a "hibernate" mode, where it can only hear "wake up", and
+#                    any 'sleepmode' commands defined above
+# "wake up"          used to wake sarah up from hibernate mode
+# "please listen"    (this may not be needed any more (todo))
+# "what can i say?"  the computer will list the things you can say
+
+
+

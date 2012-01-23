@@ -2,6 +2,7 @@
 
 grammar hello;
 
+public <SCOTTY> = scotty;
 public <EXCUSE_ME> = excuse me;
 public <MERRY_XMAS> = merry christmas;
 public <HAPPY_HO> = happy holidays;
