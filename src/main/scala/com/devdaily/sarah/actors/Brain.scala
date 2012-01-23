@@ -75,20 +75,24 @@ with Logging
       log.info("+-------------------------------+")
       log.info("")
       react {
-        case whatPersonSaid: String =>  
+        case whatPersonSaid: String =>
+             sarah.updateUISarahIsNotListening
              log.info("(Brain) about to handle voice command: \"" + whatPersonSaid + "\"")
              handleVoiceCommand(whatPersonSaid)
              shortPause
              log.info("(Brain) telling ears to listen again")
              sendMessageToIntermediary(MessageFromBrain("START LISTENING"))
+             sarah.updateUISarahIsListening
         case pleaseSay: PleaseSay => 
              log.info("(Brain) got a PleaseSay request: \"" + pleaseSay.textToSay + "\"")
              log.info("(Brain) telling intermediary to stop listening")
+             sarah.updateUISarahIsNotListening
              sendMessageToIntermediary(MessageFromBrain("STOP LISTENING"))
              speak(pleaseSay.textToSay)
              shortPause
              log.info("(Brain) telling intermediary to start listening")
              sendMessageToIntermediary(MessageFromBrain("START LISTENING"))
+             sarah.updateUISarahIsListening
         case Die =>
              log.info("Brain got Die message")
              exit
@@ -123,11 +127,16 @@ with Logging
    * before returning.
    */
   def speak(textToSpeak: String, waitTime: Int) {
+    sarah.updateUISarahIsSpeaking
     ComputerVoice.speak(textToSpeak)
     Utils.sleep(waitTime)
     log.info("(Brain)    speak: after sleep pause")
     microphone.clear
     log.info("(Brain) LEAVING Brain::speak FUNCTION")
+    // TODO i'm not sure this is accurate here (currently), but i think it needs
+    //      to be here so plugins can just call speak() and not have to think
+    //      about updating the ui (such as the Actor-based chime plugin).
+    sarah.updateUISarahIsListening
   }
   
   
@@ -136,6 +145,7 @@ with Logging
    * (This is currently just a wrapper around a string.)
    */
   def runAppleScriptCommand(command: String) {
+    sarah.updateUISarahIsSpeaking
     log.info("(Brain) ENTERED Brain::runAppleScriptCommand FUNCTION")
     val scriptEngineManager = new ScriptEngineManager
     val appleScriptEngine = scriptEngineManager.getEngineByName("AppleScript")
@@ -147,8 +157,11 @@ with Logging
       microphone.clear
     } catch {
       case e: ScriptException => e.printStackTrace
+           sarah.updateUISarahIsListening
     }
     log.info("(Brain) LEAVING Brain::runAppleScriptCommand FUNCTION")
+    // TODO verify this is accurate
+    sarah.updateUISarahIsListening
   }
 
   // handle the text the computer thinks the user said

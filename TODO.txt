@@ -1,17 +1,29 @@
 
 ---++ Short Term
 
-* add properties file for things like username, zip code
+* add properties file for things like username, zip code, preferred voice, which can be used by multiple plugins
 * get plugins and plugin api going
+* create new "current time" function as plugin
+* create new "current date" function as plugin
+* get a weather plugin working
+* get email plugin working (requires a database)
+* let user move the frame, and also let it slide back to (0,0)
 * let the user control the voice that's used
-* create new "current time" request in Scala
-* create new "current date" request in Scala
-* let me change current voice (probably need to issue a Mac 'defaults' or 
-    possibly an AppleScript command to do this
+* build all the voice files, including those from plugins, at startup, or on each speech request
+* check for updates on startup
+* clean up Sarah.scala, it's gotten really big
+
+---++ Thinking About
+
+* let plugins add their own "say" functions, so they don't have to use applescript
+
 
 ---++ Long Term
 
 * run all speech text through scala so the ui can know what's being said
   (need this for animations, shorter pauses)
 * can i reload commands and sarah.gram on each request?
+* rotate the background ui color randomly
+
+
 

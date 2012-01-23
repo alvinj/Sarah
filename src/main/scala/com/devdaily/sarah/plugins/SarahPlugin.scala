@@ -8,7 +8,9 @@ import com.devdaily.sarah.actors.Brain
 trait SarahPlugin {
   
   var brain: Brain = null
-  var moduleName: String = null
+
+//  var pluginName: String = null
+//  var mainClass: String = null
   
   /**
    * Make connections in both directions, to and from Sarah's brain.

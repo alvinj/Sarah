@@ -25,6 +25,12 @@ import java.awt.Color
 import javax.swing.ImageIcon
 import com.devdaily.splashscreen.SplashScreen
 import scala.collection.mutable.ArrayBuffer
+import com.devdaily.sarah.gui.MainFrameHeaderPanel
+import java.awt.BorderLayout
+import com.devdaily.sarah.gui.MicrophonePanel
+import com.devdaily.sarah.gui.LogOutputPanel
+import java.util.logging.FileHandler
+import java.util.logging.Logger
 import com.weiglewilczek.slf4s.Logging
 import com.weiglewilczek.slf4s.Logger
 
@@ -36,7 +42,7 @@ import com.weiglewilczek.slf4s.Logger
  * Second, I'm also trying to learn about Scala companion classes
  * and objects.
  */
-object Sarah {
+object Sarah extends Logging {
   
   def main(args: Array[String]) {
 
@@ -52,8 +58,7 @@ object Sarah {
  * This is the main Sarah class. Along with its companion object, everything starts here.
  * TODO - this class has grown out of control, and needs to be refactored.
  */
-class Sarah
-extends Logging {
+class Sarah {
 
   /**
    * REMEMBER, all code up here is basically the no-args constructor
@@ -70,20 +75,25 @@ extends Logging {
   val REL_LOGFILE_DIR       = ".sarah/logs"
   val REL_PLUGINS_DIR       = ".sarah/plugins"
   val JSGF_FILENAME         = "sarah.config.xml"
-  val LOG_FILENAME          = "Sarah.log"
+  val LOG_FILENAME          = "sarah.log"
   val FILE_PATH_SEPARATOR   = System.getProperty("file.separator")
   val USER_HOME_DIR         = System.getProperty("user.home")
   val CANON_DATA_DIR        = USER_HOME_DIR + FILE_PATH_SEPARATOR + REL_DATA_DIR
   val CANON_LOGFILE_DIR     = USER_HOME_DIR + FILE_PATH_SEPARATOR + REL_LOGFILE_DIR 
+  val CANON_LOGFILE         = CANON_LOGFILE_DIR + FILE_PATH_SEPARATOR + LOG_FILENAME 
   val CANON_PLUGINS_DIR     = USER_HOME_DIR + FILE_PATH_SEPARATOR + REL_PLUGINS_DIR
   val CANON_DEBUG_FILENAME  = CANON_LOGFILE_DIR + FILE_PATH_SEPARATOR + LOG_FILENAME
   val SARAH_CONFIG_FILE     = CANON_DATA_DIR + FILE_PATH_SEPARATOR + JSGF_FILENAME
-  val log = Logger("Sarah")
+  
+  val SPLASH_SCREEN_IMAGE   = "sarah-splash-image.png"
+
+  // TODO get logging going to the sarah.log file
+  val log = com.weiglewilczek.slf4s.Logger("Sarah")
 
   // TODO populate this list of plugins
   var pluginInstances = ArrayBuffer[SarahPlugin]()
   
-  val splashImage = new ImageIcon(classOf[com.devdaily.sarah.Sarah].getResource("sarah-splash-image.png"))
+  val splashImage = new ImageIcon(classOf[com.devdaily.sarah.Sarah].getResource(SPLASH_SCREEN_IMAGE))
   var screen = new SplashScreen(splashImage)
   screen.setLocationRelativeTo(null)
   screen.setProgressMax(100)
@@ -120,13 +130,23 @@ extends Logging {
   screen.setProgress("Starting SARAH's interface ...", 90)
   destroySplashScreen
 
+  val headerPanel = new MainFrameHeaderPanel
+  val microphonePanel = new MicrophonePanel(this)
+  val logOutputPanel = new LogOutputPanel
   val mainFrame = new MainFrame
+  mainFrame.add(headerPanel, BorderLayout.NORTH)
+  mainFrame.add(microphonePanel, BorderLayout.CENTER)
+  mainFrame.add(logOutputPanel, BorderLayout.SOUTH)
   displayMainFrame
 
 
   // END constructor
 
-
+  // TODO probably a better way to do these
+  def getDataFileDirectory = CANON_DATA_DIR
+  def getLogFileDirectory  = CANON_LOGFILE_DIR
+  def getFilePathSeparator = FILE_PATH_SEPARATOR
+  
   def startRunning {
     // start the actor threads
     earBrainIntermediary.start
@@ -137,11 +157,34 @@ extends Logging {
     
   }
 
-  // TODO probably a better way to do these
-  def getDataFileDirectory = CANON_DATA_DIR
-  def getLogFileDirectory  = CANON_LOGFILE_DIR
-  def getFilePathSeparator = FILE_PATH_SEPARATOR
-  
+  /**
+   * SARAH is speaking, listening, or not listening.
+   * -----------------------------------------------
+   */
+  def updateUISarahIsSpeaking {
+    SwingUtilities.invokeLater(new Runnable() {
+      def run() {
+        microphonePanel.setSarahIsSpeaking
+      }
+    });
+  }
+
+  def updateUISarahIsListening {
+    SwingUtilities.invokeLater(new Runnable() {
+      def run() {
+        microphonePanel.setSarahIsListening
+      }
+    });
+  }
+
+  def updateUISarahIsNotListening {
+    SwingUtilities.invokeLater(new Runnable() {
+      def run() {
+        microphonePanel.setSarahIsNotListening
+      }
+    });
+  }
+
   
   def destroySplashScreen {
     screen.setVisible(false)
@@ -162,16 +205,25 @@ extends Logging {
         val canonPluginDir = CANON_PLUGINS_DIR + FILE_PATH_SEPARATOR + pluginDir
         log.info("Looking at PLUGIN DIR: " + canonPluginDir)
         val pluginInfoFilename = getPluginInfoFilename(canonPluginDir)
-        log.info("PLUGIN INFO FILENAME: " + pluginInfoFilename)
+        log.info("pluginInfoFilename = " + pluginInfoFilename)
         val pluginProperties = getPluginProperties(canonPluginDir + FILE_PATH_SEPARATOR + pluginInfoFilename)
+        log.info("read pluginProperties")
         val pluginJarFilename = getPluginJarFilename(canonPluginDir)
-        log.info("PLUGIN JAR FILENAME: " + pluginJarFilename)
-        log.info("MAIN CLASS: " + pluginProperties.get("main_class").get)
+        log.info("pluginJarFilename = " + pluginJarFilename)
+        val mainClassName = pluginProperties.get("main_class").get
+        log.info("mainClassName = " + mainClassName)
         val canonJarFilename = canonPluginDir + FILE_PATH_SEPARATOR + pluginJarFilename
-        val pluginInstance = getPluginInstance(canonJarFilename, pluginProperties.get("main_class").get)
+        log.info("canonJarFilename = " + canonJarFilename)
+        val pluginInstance = getPluginInstance(canonJarFilename, mainClassName)
+        log.info("created pluginInstance")
+//        pluginInstance.mainClass = mainClassName
+//        log.info("pluginInstance.mainClass = " + pluginInstance.mainClass)
+//        pluginInstance.pluginName = pluginProperties.get("plugin_name").getOrElse("NO NAME")
+//        log.info("pluginInstance.name = " + pluginInstance.pluginName)
         log.info("GOT PLUGIN INSTANCE")
         pluginInstances += pluginInstance
       } // end for loop
+      log.info("Looping through plugin instances ...")
       for (plugin <- pluginInstances) {
         log.info("Trying to start plugin instance: " + plugin.toString())
         connectInstanceToBrain(plugin)
@@ -187,19 +239,34 @@ extends Logging {
    */
   def getPluginInstance(canonicalJarFilename: String, mainClassName: String): SarahPlugin = {
     try {
+      log.info("creating classLoader ...")
+      log.info("  canonicalJarFilename = " + canonicalJarFilename)
+      log.info("  mainClassName = " + mainClassName)
       var classLoader = new java.net.URLClassLoader(Array(new File(canonicalJarFilename).toURI.toURL), this.getClass.getClassLoader)
-      return classLoader.loadClass(mainClassName).newInstance.asInstanceOf[SarahPlugin]
+      log.info("creating new plugin instance as a SarahPlugin ...")
+      
+      // CODE FAILS HERE with AbstractMethodError
+
+      var pluginInstance:SarahPlugin = classLoader.loadClass(mainClassName).newInstance.asInstanceOf[SarahPlugin]
+
+      log.info("returning new plugin instance ...")
+      return pluginInstance
     } catch {
       case cce: ClassCastException => log.error(cce.getMessage())
                                       throw cce
+      case ame: AbstractMethodError => log.error(ame.getMessage())
+                                      throw new Exception("GOT AN AbstractMethodError")
       case e:   Exception =>          log.error(e.getMessage())
                                       throw e
     }
   }
   
   def connectInstanceToBrain(pluginInstance: SarahPlugin) {
+    log.info("connecting instance to brain")
     pluginInstance.connectToBrain(brain)
+    log.info("starting plugin")
     pluginInstance.startPlugin
+    log.info("started plugin")
   }
   
   /**
