@@ -24,6 +24,9 @@ import java.awt.Toolkit
 import java.awt.Color
 import javax.swing.ImageIcon
 import com.devdaily.splashscreen.SplashScreen
+import scala.collection.mutable.ArrayBuffer
+import com.weiglewilczek.slf4s.Logging
+import com.weiglewilczek.slf4s.Logger
 
 
 /**
@@ -45,7 +48,12 @@ object Sarah {
 } // end of object
 
 
-class Sarah {
+/**
+ * This is the main Sarah class. Along with its companion object, everything starts here.
+ * TODO - this class has grown out of control, and needs to be refactored.
+ */
+class Sarah
+extends Logging {
 
   /**
    * REMEMBER, all code up here is basically the no-args constructor
@@ -57,18 +65,23 @@ class Sarah {
   val EXIT_CODE_NOT_RUNNING_ON_MAC = 2
   val INITIAL_FRAME_COLOR = new Color(170, 194, 156)
 
-  // TODO see Hyde SoundFileController for examples of copying files
-  // filesystem variables
+  // TODO all of these constants probably need to go somewhere else
   val REL_DATA_DIR          = ".sarah/data"
-  val REL_LOGFILE_DIRECTORY = ".sarah/logs"
+  val REL_LOGFILE_DIR       = ".sarah/logs"
+  val REL_PLUGINS_DIR       = ".sarah/plugins"
   val JSGF_FILENAME         = "sarah.config.xml"
   val LOG_FILENAME          = "Sarah.log"
   val FILE_PATH_SEPARATOR   = System.getProperty("file.separator")
   val USER_HOME_DIR         = System.getProperty("user.home")
   val CANON_DATA_DIR        = USER_HOME_DIR + FILE_PATH_SEPARATOR + REL_DATA_DIR
-  val SARAH_CONFIG_FILE     = CANON_DATA_DIR + FILE_PATH_SEPARATOR + JSGF_FILENAME
-  val CANON_LOGFILE_DIR     = USER_HOME_DIR + FILE_PATH_SEPARATOR + REL_LOGFILE_DIRECTORY 
+  val CANON_LOGFILE_DIR     = USER_HOME_DIR + FILE_PATH_SEPARATOR + REL_LOGFILE_DIR 
+  val CANON_PLUGINS_DIR     = USER_HOME_DIR + FILE_PATH_SEPARATOR + REL_PLUGINS_DIR
   val CANON_DEBUG_FILENAME  = CANON_LOGFILE_DIR + FILE_PATH_SEPARATOR + LOG_FILENAME
+  val SARAH_CONFIG_FILE     = CANON_DATA_DIR + FILE_PATH_SEPARATOR + JSGF_FILENAME
+  val log = Logger("Sarah")
+
+  // TODO populate this list of plugins
+  var pluginInstances = ArrayBuffer[SarahPlugin]()
   
   val splashImage = new ImageIcon(classOf[com.devdaily.sarah.Sarah].getResource("sarah-splash-image.png"))
   var screen = new SplashScreen(splashImage)
@@ -135,25 +148,137 @@ class Sarah {
     screen = null
   }
   
-  /**
-   * Load any/all application plugins that have been defined.
-   * TODO implement this with a real plugin directory.
-   */
   def loadPlugins {
-    try {
-    var classLoader = new java.net.URLClassLoader(Array(new File("/Users/al/Projects/Scala/SarahHourlyChime/deploy/HourlyChime.jar").toURI.toURL),
-      this.getClass.getClassLoader)
-    var pluginInstance:SarahActorBasedPlugin = classLoader.loadClass("com.devdaily.sarah.plugin.hourlychime.HourlyChimePlugin").newInstance.asInstanceOf[SarahActorBasedPlugin]
+    // get a list of subdirs in the plugins dir, assume each is a plugin
+    log.info("Getting list of PLUGIN subdirectories, looking in '" + CANON_PLUGINS_DIR + "'")
+    val pluginDirs = getListOfSubDirectories(CANON_PLUGINS_DIR)
+    log.info("pluginDirs.length = " + pluginDirs.length)
     
-    pluginInstance.connectToBrain(brain)
-    pluginInstance.start
+    // trying to keep things simple here. if anything goes wrong in the functions we call,
+    // they will throw an exception, and we'll log the error and skip that exception.
+    try {
+      log.info("About to loop over pluginDirs ...")
+      for (pluginDir <- pluginDirs) {
+        val canonPluginDir = CANON_PLUGINS_DIR + FILE_PATH_SEPARATOR + pluginDir
+        log.info("Looking at PLUGIN DIR: " + canonPluginDir)
+        val pluginInfoFilename = getPluginInfoFilename(canonPluginDir)
+        log.info("PLUGIN INFO FILENAME: " + pluginInfoFilename)
+        val pluginProperties = getPluginProperties(canonPluginDir + FILE_PATH_SEPARATOR + pluginInfoFilename)
+        val pluginJarFilename = getPluginJarFilename(canonPluginDir)
+        log.info("PLUGIN JAR FILENAME: " + pluginJarFilename)
+        log.info("MAIN CLASS: " + pluginProperties.get("main_class").get)
+        val canonJarFilename = canonPluginDir + FILE_PATH_SEPARATOR + pluginJarFilename
+        val pluginInstance = getPluginInstance(canonJarFilename, pluginProperties.get("main_class").get)
+        log.info("GOT PLUGIN INSTANCE")
+        pluginInstances += pluginInstance
+      } // end for loop
+      for (plugin <- pluginInstances) {
+        log.info("Trying to start plugin instance: " + plugin.toString())
+        connectInstanceToBrain(plugin)
+      }
     } catch {
-      case cce: ClassCastException =>  cce.printStackTrace()
-      case e:   Exception =>           e.printStackTrace()
+      case e: Exception => // ignore, and move on to next plugin
+           log.error("Had a problem loading a plugin. See previous exceptions.")
     }
   }
 
+  /**
+   * Returns the plugin as a ready-to-run instance, or throws an exception.
+   */
+  def getPluginInstance(canonicalJarFilename: String, mainClassName: String): SarahPlugin = {
+    try {
+      var classLoader = new java.net.URLClassLoader(Array(new File(canonicalJarFilename).toURI.toURL), this.getClass.getClassLoader)
+      return classLoader.loadClass(mainClassName).newInstance.asInstanceOf[SarahPlugin]
+    } catch {
+      case cce: ClassCastException => log.error(cce.getMessage())
+                                      throw cce
+      case e:   Exception =>          log.error(e.getMessage())
+                                      throw e
+    }
+  }
+  
+  def connectInstanceToBrain(pluginInstance: SarahPlugin) {
+    pluginInstance.connectToBrain(brain)
+    pluginInstance.startPlugin
+  }
+  
+  /**
+   * Get the plugin properties (plugin_name, main_class), or throw an exception.
+   */
+  def getPluginProperties(infoFilename: String): Map[String, String] = {
+    try {
+      val properties = new Properties
+      val in = new FileInputStream(infoFilename)
+      properties.load(in)
+      in.close()
+      val pluginName = properties.getProperty("plugin_name", "[NO NAME]")
+      val mainClass = properties.getProperty("main_class", "")
+      if (mainClass.trim().equals("")) {
+        throw new Exception("main_class not found in .info file (" + infoFilename + ").")
+      }
+      return Map("main_class" -> mainClass, "plugin_name" -> pluginName)
+    } catch {
+      case e:Exception => log.error(e.getMessage())
+                          throw e
+    }
+  }
 
+  /**
+   * Get a List[String] representing all the sub-directories in the given directory.
+   */
+  def getListOfSubDirectories(directoryName: String): scala.collection.immutable.List[String] = {
+    val folder = new File(directoryName)
+    val files = folder.listFiles // File[]
+    val dirNames = ArrayBuffer[String]()
+    for (file <- files) {
+      if (file.isDirectory()) {
+        dirNames += file.getName()
+      }
+    }
+    return dirNames.toList
+  }
+
+  /**
+   * Returns the name of the plugin's ".info" file, or throws an exception.
+   * Code assumes there is one .info file in the current dir.
+   * Throws an Exception if a file is not found.
+   * TODO refactor this function to work with the similar '.jar' function.
+   */
+  def getPluginInfoFilename(directoryName: String):String = {
+    val folder = new File(directoryName)
+    val files = folder.listFiles(new FilenameFilter {
+      def accept(file: File, filename: String): Boolean = {
+        return (filename.endsWith(".info"))
+      }
+    })
+    if (files == null || files.length > 0) {
+      return files(0).getName
+    } else {
+      throw new Exception("No .info file found in directory '" + directoryName + "'")
+    }
+  }
+
+  /**
+   * Returns the name of the plugin's ".jar" file.
+   * Code assumes there is one .jar file in the current dir.
+   * Throws an Exception if a file is not found.
+   * TODO refactor this function to work with the similar '.info' function.
+   */
+  def getPluginJarFilename(directoryName: String):String = {
+    val folder = new File(directoryName)
+    val files = folder.listFiles(new FilenameFilter {
+      def accept(file: File, filename: String): Boolean = {
+        return (filename.endsWith(".jar"))
+      }
+    })
+    if (files == null || files.length > 0) {
+      return files(0).getName
+    } else {
+      throw new Exception("No .jar file found in directory '" + directoryName + "'")
+    }
+  }
+  
+  
   /**
    * If the app is not running on mac os x, die right away.
    */

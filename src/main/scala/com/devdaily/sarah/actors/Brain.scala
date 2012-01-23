@@ -48,6 +48,7 @@ with Logging
 
   val randomizer = new Random(56)
   var inSleepMode = false
+  val SLEEP_AFTER_SPEAKING_SHORT      = 1000
   val SLEEP_AFTER_SPEAKING            = 1500
   val SLEEP_AFTER_APPLESCRIPT_COMMAND = 1500
   val SLEEP_SHORT_PAUSE               = 3000
@@ -110,19 +111,25 @@ with Logging
   
   
   /**
-   * A function to speak a string of text to the user.
-   * This function replaces the former Mouth class.
+   * Speak whatever needs to be spoken, then wait a default time
+   * of SLEEP_AFTER_SPEAKING before returning.
    */
   def speak(textToSpeak: String) {
-    log.info("(Brain) ENTERED Brain::speak FUNCTION")
-    log.info("(Brain)    speak: Sarah is about to say: " + textToSpeak)
+    speak(textToSpeak, SLEEP_AFTER_SPEAKING)
+  }
+  
+  /**
+   * Speak whatever needs to be spoken, then wait the given time
+   * before returning.
+   */
+  def speak(textToSpeak: String, waitTime: Int) {
     ComputerVoice.speak(textToSpeak)
-    log.info("(Brain)    speak: after ComputerVoice.speak, about to sleep")
-    Utils.sleep(SLEEP_AFTER_SPEAKING)
+    Utils.sleep(waitTime)
     log.info("(Brain)    speak: after sleep pause")
     microphone.clear
     log.info("(Brain) LEAVING Brain::speak FUNCTION")
   }
+  
   
   /**
    * Run the AppleScript command encapsulated in the AppleScriptCommand object.
@@ -219,14 +226,18 @@ with Logging
   
   def replyToUserSayingThankYou {
     val textToSay = getRandomStringFromFile(sarah.getDataFileDirectory + "/" + REPLY_TO_THANK_YOU_FILE)
-    speak(textToSay)
+    speak(textToSay, SLEEP_AFTER_SPEAKING_SHORT)
   }
   
   def replyToUserSayingComputer {
     val textToSay = getRandomStringFromFile(sarah.getDataFileDirectory + "/" + SAY_YES_FILE)
-    speak(textToSay)
+    speak(textToSay, SLEEP_AFTER_SPEAKING_SHORT)
   }
   
+  /**
+   * Gets a random string from the given file. The file is assumed to have one or more
+   * lines of strings that are meant to be read in as an array/list.
+   */
   def getRandomStringFromFile(canonicalFilename: String): String = {
     val options = Source.fromFile(canonicalFilename).getLines.toList
     return options.get(Random.nextInt(options.length))
