@@ -1,5 +1,7 @@
 package com.devdaily.sarah.gui
 
+import javax.swing.SwingUtilities
+
 abstract class BaseMainFrameController {
   
   def getMainFrame: BaseMainFrame
@@ -8,5 +10,15 @@ abstract class BaseMainFrameController {
   def updateUISarahIsSpeaking
   def updateUISarahIsListening
   def updateUISarahIsNotListening
+  
+  def invokeLater(callback: => Unit) {
+    SwingUtilities.invokeLater(new Runnable() {
+      def run() {
+        callback
+      }
+    });
+  }
+
+
 
 }

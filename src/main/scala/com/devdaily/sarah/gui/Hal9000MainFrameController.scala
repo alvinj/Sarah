@@ -17,14 +17,6 @@ class Hal9000MainFrameController(sarah: Sarah) extends BaseMainFrameController {
   
   def getMainFrame = mainFrame
   
-  def invokeLater(callback: => Unit) {
-    SwingUtilities.invokeLater(new Runnable() {
-      def run() {
-        callback
-      }
-    });
-  }
-
   // do nothing ... yet
   def updateUISarahIsSleeping {}
   def updateUISarahIsSpeaking {}

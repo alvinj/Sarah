@@ -16,14 +16,6 @@ class MicrophoneMainFrameController(sarah: Sarah) extends BaseMainFrameControlle
   
   def getMainFrame = mainFrame
   
-  def invokeLater(callback: => Unit) {
-    SwingUtilities.invokeLater(new Runnable() {
-      def run() {
-        callback
-      }
-    });
-  }
-
   def updateUISarahIsSleeping = invokeLater(microphonePanel.setSarahIsSleeping)
   def updateUISarahIsSpeaking = invokeLater(microphonePanel.setSarahIsSpeaking)
   def updateUISarahIsListening = invokeLater(microphonePanel.setSarahIsListening)
