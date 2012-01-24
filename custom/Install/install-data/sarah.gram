@@ -25,9 +25,11 @@ public <LLAP> = live long and prosper;
 public <JUST_CHECKING> = just checking;
 
 // SCRIPTS, AGENTS
-public <WEATHER_CURRENT> = (current weather | current weather conditions);
-public <DATE> = [computer] what day is it;
-public <TIME> = [computer] what time is it;
+public <WEATHER_CURRENT> = current weather;
+public <DATE> = what day is it;
+
+// now handled by CurrentTimePlugin
+public <TIME> = what time is it;
 
 // PHYSICAL/ROBOT INTERACTIONS (SUCH AS ARDUINO)
 public <FIREPLACE_ON> = fireplace on;

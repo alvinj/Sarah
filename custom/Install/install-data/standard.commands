@@ -19,10 +19,6 @@ JUST_CHECKING         : say "Okay"
 
 # these commands show a little more applescript
 DATE                  : say (date string of (current date))
-TIME                  : say (time string of (current date))
-
-# TODO replace this with a plugin module
-WEATHER_CURRENT       : do shell script "osascript $HOME/Sarah/datascripts/weather-current.scpt"
 
 # this syntax works, if needed 
 #COMPUTER : do shell script "osascript $HOME/Sarah/data/scripts/yes.scpt"
