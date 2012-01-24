@@ -22,4 +22,14 @@ trait SarahPlugin {
   
   def startPlugin 
 
+  // phrases the plugin can handle
+  def textPhrasesICanHandle: List[String]
+
+  // callback to tell the plugin to handle the given phrase.
+  // returns true if the phrase was handled.
+  def handlePhrase(phrase: String): Boolean
+
+  
+  
+  
 }

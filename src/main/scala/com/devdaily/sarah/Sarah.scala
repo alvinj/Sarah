@@ -190,7 +190,15 @@ class Sarah {
     mainFrameController.displayAvailableVoiceCommands(voiceCommands)
   }
   
-  
+  def tryToHandleTextWithPlugins(textTheUserSaid: String): Boolean = {
+    log.info("tryToHandleTextWithPlugins, TEXT = " + textTheUserSaid)
+    // loop through the plugins, and see if any can handle what was said
+    for (plugin <- pluginInstances) {
+      val handled = plugin.handlePhrase(textTheUserSaid)
+      if (handled) return true
+    }
+    return false
+  }
   
   
   def loadPlugins {

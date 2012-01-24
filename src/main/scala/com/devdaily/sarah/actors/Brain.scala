@@ -235,20 +235,25 @@ with Logging
     // re-load these to let the user change commands while we run
     loadAllUserConfigurationFilesOrDie
 
+    log.info("Checking to see if it's a special voice command ...")
     if (handleSpecialVoiceCommands(textTheUserSaid)) {
-      log.info("(Brain) Handled a special voice command, returning.")
+      log.info("Handled a special voice command, returning.")
       return
     }
 
+    log.info("Wasn't a special voice command, now looping through user-defined voice commands.")
     // if the command phrase is in the map, do some work
     if (phraseToCommandMap.containsKey(textTheUserSaid)) {
+      log.info("phraseToCommandMap contained key, trying to process")
       // handle whatever the user said
-      log.info("(Brain) handleVoiceCommand, found your phrase in the map: " + textTheUserSaid)
-      handleUserDefinedVoiceCommand(textTheUserSaid)
-      return
+      log.info("handleVoiceCommand, found your phrase in the map: " + textTheUserSaid)
+      val handled = handleUserDefinedVoiceCommand(textTheUserSaid)
     }
     else {
-      log.info("Sorry, could not handle command.")
+      // there were no matches; check the plugins registered with sarah
+      log.info(format("phraseToCommandMap didn't have key (%s), trying plugins", textTheUserSaid))
+      val handled = sarah.tryToHandleTextWithPlugins(textTheUserSaid)
+      // this function doesn't care if it was handled (refactor)
     }
   }
 
@@ -290,12 +295,6 @@ with Logging
       listAvailableVoiceCommands
       return true
     }
-
-    // special 'wake up' action
-//    else if (inSleepMode && textTheUserSaid.matches(".*wake up.*")) {
-//      doWakeUpActions
-//      return true
-//    }
     
     return false
   }
@@ -338,27 +337,33 @@ with Logging
     
   }
   
-  def handleUserDefinedVoiceCommand(textTheUserSaid: String) {
-    log.info("(Brain) Entered Brain::handleUserDefinedVoiceCommand")
+  def handleUserDefinedVoiceCommand(textTheUserSaid: String): Boolean = {
+    log.info("Entered Brain::handleUserDefinedVoiceCommand")
     val commandFileKey = phraseToCommandMap.get(textTheUserSaid)  // ex: COMPUTER, JUST_CHECKING
-    log.info("(Brain) Brain::handleUserDefinedVoiceCommand, commandFileKey = " + commandFileKey)
+    log.info("Brain::handleUserDefinedVoiceCommand, commandFileKey = " + commandFileKey)
     // foreach is enabled by importing JavaConversions._ above
     allVoiceCommands.foreach{ voiceCommand =>
       val voiceCommandKey = voiceCommand.getCommand()
       if (voiceCommandKey.equalsIgnoreCase(commandFileKey)) {
+        if (voiceCommand.getAppleScript==null || voiceCommand.getAppleScript.trim.equals("")) {
+          log.info("handleUserDefinedVoiceCommand, appleScript is not defined, passing on it")
+          return false
+        }
         if (!inSleepMode || voiceCommand.worksInSleepMode()) {
+          log.info("running runUserDefinedCommand(voiceCommand)")
           runUserDefinedCommand(voiceCommand)
-          printMode()
-          return
+          printMode
+          return true
         }
         else
         {
-          printMode()
+          printMode
           log.info("In sleep mode, ignoring command.")
-          return
+          return false
         }
       }
     }
+    return false
   }
   
   
