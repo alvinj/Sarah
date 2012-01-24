@@ -10,6 +10,12 @@ import javax.swing.JLabel
 import java.awt.FlowLayout
 import com.devdaily.sarah.plugins.Utils
 import com.devdaily.sarah.actors.Brain
+import javax.swing.JEditorPane
+import java.awt.Dimension
+import javax.swing.UIManager
+import java.awt.Insets
+import javax.swing.JScrollPane
+import javax.swing.JOptionPane
 
 class MicrophoneMainFrameController(sarah: Sarah) extends BaseMainFrameController {
 
@@ -46,6 +52,19 @@ class MicrophoneMainFrameController(sarah: Sarah) extends BaseMainFrameControlle
     invokeLater(headerPanel.setSarahIsSpeaking)
   }
 
+  def displayAvailableVoiceCommands(voiceCommands: List[String]) {
+    val sb = new StringBuilder
+    for (s <- voiceCommands) {
+      sb.append(s)
+      sb.append("\n")
+    }
+    val textToShow = sb.toString
+    val window = new DisplayTextWindow(getMainFrame, textToShow)
+    invokeLater(window.setVisible(true))
+    Utils.sleep(5000)
+    invokeLater(window.setVisible(false))
+  }
+  
 }
 
 /**

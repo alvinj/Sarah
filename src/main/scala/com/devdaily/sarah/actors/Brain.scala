@@ -17,6 +17,7 @@ import _root_.com.weiglewilczek.slf4s.Logger
 import _root_.com.devdaily.sarah._
 import _root_.com.devdaily.sarah.plugins._
 import scala.io.Source
+import scala.collection.mutable.ArrayBuffer
 
 
 object Brain {
@@ -322,16 +323,19 @@ with Logging
    * List all the voice command the user can say.
    */
   def listAvailableVoiceCommands() {
-    log.info("(Brain) Entered Brain::listAvailableVoiceCommands")
+    // get all voice commands from the config files (populates allVoiceCommands)
     loadAllUserConfigurationFilesOrDie
-    allVoiceCommands.foreach{ voiceCommand =>
-      val voiceCommandKey = voiceCommand.getCommand()
-      printf("COMMAND: %s\n", voiceCommandKey)
-    }
-    printf("COMMAND: %s\n", "go to sleep")
-    printf("COMMAND: %s\n", "wake up")
-    printf("COMMAND: %s\n", "what can i say")
-    printf("COMMAND: %s\n", "soylent green is people")
+    
+    val voiceCommandsAsStrings = allVoiceCommands.map(_.getCommand)
+    val voiceCommandListForSarah = ArrayBuffer[String]()
+    voiceCommandListForSarah.addAll(voiceCommandsAsStrings)
+    voiceCommandListForSarah += "go to sleep"
+    voiceCommandListForSarah += "wake up"
+    voiceCommandListForSarah += "what can i say?"
+    voiceCommandListForSarah += "soylent green is people"
+      
+    sarah.displayAvailableVoiceCommands(voiceCommandListForSarah.toList)
+    
   }
   
   def handleUserDefinedVoiceCommand(textTheUserSaid: String) {

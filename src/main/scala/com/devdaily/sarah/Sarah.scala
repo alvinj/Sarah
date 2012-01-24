@@ -180,12 +180,18 @@ class Sarah {
   def updateUISarahIsNotListening {
     mainFrameController.updateUISarahIsNotListening
   }
-
   
   def destroySplashScreen {
     screen.setVisible(false)
     screen = null
   }
+  
+  def displayAvailableVoiceCommands(voiceCommands: scala.collection.immutable.List[String]) {
+    mainFrameController.displayAvailableVoiceCommands(voiceCommands)
+  }
+  
+  
+  
   
   def loadPlugins {
     // get a list of subdirs in the plugins dir, assume each is a plugin
