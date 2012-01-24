@@ -7,6 +7,7 @@ abstract class BaseMainFrameController {
   def getMainFrame: BaseMainFrame
 
   def updateUISarahIsSleeping
+  def updateUISarahIsSleepingButHeardSomething
   def updateUISarahIsSpeaking
   def updateUISarahIsListening
   def updateUISarahIsNotListening

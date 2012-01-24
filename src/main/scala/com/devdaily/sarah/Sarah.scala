@@ -25,16 +25,18 @@ import java.awt.Color
 import javax.swing.ImageIcon
 import com.devdaily.splashscreen.SplashScreen
 import scala.collection.mutable.ArrayBuffer
-import com.devdaily.sarah.gui.MainFrameHeaderPanel
 import java.awt.BorderLayout
-import com.devdaily.sarah.gui.MicrophonePanel
-import com.devdaily.sarah.gui.LogOutputPanel
 import java.util.logging.FileHandler
 import java.util.logging.Logger
 import com.weiglewilczek.slf4s.Logging
 import com.weiglewilczek.slf4s.Logger
 import com.devdaily.sarah.gui.MicrophoneMainFrameController
 import com.devdaily.sarah.gui.Hal9000MainFrameController
+import javax.swing.JEditorPane
+import java.awt.Dimension
+import java.awt.Insets
+import javax.swing.JScrollPane
+import javax.swing.JOptionPane
 
 
 /**
@@ -132,8 +134,8 @@ class Sarah {
   screen.setProgress("Starting SARAH's interface ...", 90)
   destroySplashScreen
 
-  //val mainFrameController = new MicrophoneMainFrameController(this)
-  val mainFrameController = new Hal9000MainFrameController(this)
+  //val mainFrameController = new Hal9000MainFrameController(this)
+  val mainFrameController = new MicrophoneMainFrameController(this)
   val mainFrame = mainFrameController.getMainFrame
   displayMainFrame
 
@@ -161,6 +163,10 @@ class Sarah {
    */
   def updateUISarahIsSleeping {
     mainFrameController.updateUISarahIsSleeping
+  }
+
+  def updateUISarahIsSleepingButHeardSomething {
+    mainFrameController.updateUISarahIsSleepingButHeardSomething
   }
 
   def updateUISarahIsSpeaking {
@@ -352,12 +358,12 @@ class Sarah {
 
     // create an instance of the Mac Application class, so i can handle the 
     // mac quit event with the Mac ApplicationAdapter
-    val macApplication = Application.getApplication()
+    val macApplication = Application.getApplication
     val macAdapter = new MacApplicationAdapter(this)
     macApplication.addApplicationListener(macAdapter)
     
-    // must enable the preferences option manually
-    macApplication.setEnabledPreferencesMenu(true)
+    // TODO - enable when ready (must enable the preferences option manually)
+    //macApplication.setEnabledPreferencesMenu(true)
   }
   
   // TODO implement
@@ -369,12 +375,26 @@ class Sarah {
   def handleMacPreferencesAction {
   }
   
-  // TODO implement
   def handleMacAboutAction {
+    // used html here so i can add a hyperlink later
+    val ABOUT_DIALOG_MESSAGE = "<html><center><p>SARAH</p></center>\n\n" + "<center><p>Created by Alvin Alexander, devdaily.com</p><center>\n"
+    val editor = new JEditorPane
+    editor.setContentType("text/html")
+    editor.setEditable(false)
+    editor.setSize(new Dimension(400,300))
+    editor.setFont(UIManager.getFont("EditorPane.font"))
+    // note: had to include this line to get it to use my font
+    editor.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, true)
+    editor.setMargin(new Insets(5,15,25,15))
+    editor.setText(ABOUT_DIALOG_MESSAGE)
+    editor.setCaretPosition(0)
+    val scrollPane = new JScrollPane(editor)
+    // display our message
+    JOptionPane.showMessageDialog(mainFrameController.getMainFrame, scrollPane,
+        "About Hyde", JOptionPane.INFORMATION_MESSAGE);
   }
   
   def displayMainFrame {
-    // TODO is this needed?
     try {
       UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
     } catch {
@@ -392,6 +412,7 @@ class Sarah {
     mainFrame.setLocationRelativeTo(null)
   }
   
+  // TODO clean this up with the new invokeLater approach
   def displayMainFrame2 {
     SwingUtilities.invokeLater(new Runnable()
     {
@@ -403,6 +424,7 @@ class Sarah {
     });
   }
   
+  // TODO clean this up with the new invokeLater approach
   def giveFocusBackToMainFrame
   {
     SwingUtilities.invokeLater(new Runnable()

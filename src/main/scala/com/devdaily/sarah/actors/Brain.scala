@@ -18,6 +18,16 @@ import _root_.com.devdaily.sarah._
 import _root_.com.devdaily.sarah.plugins._
 import scala.io.Source
 
+
+object Brain {
+  val SLEEP_500_MS                    = 500
+  val SLEEP_1000_MS                   = 1000
+  val SLEEP_AFTER_SPEAKING_SHORT      = SLEEP_1000_MS
+  val SLEEP_AFTER_SPEAKING            = 1500
+  val SLEEP_AFTER_APPLESCRIPT_COMMAND = 1500
+  val SLEEP_SHORT_PAUSE               = 3000
+}
+
 /**
  * This actor has the responsibility of running whatever command it is given.
  * If necessary, the Brain will also tell the Mouth what to say, so when
@@ -48,10 +58,6 @@ with Logging
 
   val randomizer = new Random(56)
   var inSleepMode = false
-  val SLEEP_AFTER_SPEAKING_SHORT      = 1000
-  val SLEEP_AFTER_SPEAKING            = 1500
-  val SLEEP_AFTER_APPLESCRIPT_COMMAND = 1500
-  val SLEEP_SHORT_PAUSE               = 3000
   
   // map(sentence, appleScriptKey)
   var phraseCommandMapFiles:Array[String] = null
@@ -66,6 +72,9 @@ with Logging
   
   val log = Logger("Brain")
 
+  // TODO yes, i know this code is a mess and needs to be refactored. 
+  //      there are a lot of kludges to handle the problem
+  //      where i can't turn the microphone off.
   def act() {
     loop {
       log.info("THE BRAIN IS READY")
@@ -76,23 +85,46 @@ with Logging
       log.info("")
       react {
         case whatPersonSaid: String =>
-             sarah.updateUISarahIsNotListening
-             log.info("(Brain) about to handle voice command: \"" + whatPersonSaid + "\"")
-             handleVoiceCommand(whatPersonSaid)
-             shortPause
-             log.info("(Brain) telling ears to listen again")
-             sendMessageToIntermediary(MessageFromBrain("START LISTENING"))
-             sarah.updateUISarahIsListening
+             if (inSleepMode) {
+               sarah.updateUISarahIsSleepingButHeardSomething
+               handleWakeUpRequestIfReceived(whatPersonSaid)
+             } else {
+               // not in sleep mode
+               sarah.updateUISarahIsNotListening
+               log.info("(Brain) about to handle voice command: \"" + whatPersonSaid + "\"")
+               handleVoiceCommand(whatPersonSaid)
+               shortPause
+               log.info("(Brain) telling ears to listen again")
+               // even if sarah goes to sleep, it needs to listen for commands, in particular
+               // the 'wake up' command
+               sendMessageToIntermediary(MessageFromBrain("START LISTENING"))
+               // handling the voice command may have flipped us into sleep mode
+               if (!inSleepMode) {
+                 sarah.updateUISarahIsListening
+               }
+             }
         case pleaseSay: PleaseSay => 
-             log.info("(Brain) got a PleaseSay request: \"" + pleaseSay.textToSay + "\"")
-             log.info("(Brain) telling intermediary to stop listening")
-             sarah.updateUISarahIsNotListening
-             sendMessageToIntermediary(MessageFromBrain("STOP LISTENING"))
-             speak(pleaseSay.textToSay)
-             shortPause
-             log.info("(Brain) telling intermediary to start listening")
-             sendMessageToIntermediary(MessageFromBrain("START LISTENING"))
-             sarah.updateUISarahIsListening
+             if (inSleepMode) {
+               sarah.updateUISarahIsSleepingButHeardSomething
+               handleWakeUpRequestIfReceived(pleaseSay.textToSay)
+             }
+             else {
+               if (pleaseSay.textToSay.equals("go to sleep")) {
+                 doGoToSleepActions
+                 // always need to respond to intermediary
+                 sendMessageToIntermediary(MessageFromBrain("START LISTENING"))
+               } else {
+                 log.info("(Brain) got a PleaseSay request: \"" + pleaseSay.textToSay + "\"")
+                 log.info("(Brain) telling intermediary to stop listening")
+                 sarah.updateUISarahIsNotListening
+                 sendMessageToIntermediary(MessageFromBrain("STOP LISTENING"))
+                 speak(pleaseSay.textToSay)
+                 shortPause
+                 log.info("(Brain) telling intermediary to start listening")
+                 sendMessageToIntermediary(MessageFromBrain("START LISTENING"))
+                 sarah.updateUISarahIsListening
+               }
+             }
         case Die =>
              log.info("Brain got Die message")
              exit
@@ -102,13 +134,43 @@ with Logging
     }
   }
 
+  // this should be the only way to "wake up"
+  def handleWakeUpRequestIfReceived(whatTheComputerThinksISaid: String) {
+    if (whatTheComputerThinksISaid.matches(".*wake up.*")) {
+      doWakeUpActions
+    } else {
+      sarah.updateUISarahIsSleeping
+    }
+    // make sure the intermediary stays alive
+    sendMessageToIntermediary(MessageFromBrain("START LISTENING"))
+    shortPause
+  }
+  
+  def doGoToSleepActions {
+    inSleepMode = true
+    speak("Going to sleep")
+    sarah.updateUISarahIsSleeping
+    // kludge - i'm turning this off somewhere, and need it to be on so i can hear
+    // the "wake up" request
+    sendMessageToIntermediary(MessageFromBrain("START LISTENING"))
+    printMode
+  }
+
+  def doWakeUpActions {
+    sendMessageToIntermediary(MessageFromBrain("START LISTENING"))
+    sarah.updateUISarahIsListening
+    inSleepMode = false
+    speak("Okay, I'm awake")
+    printMode()
+  }
+
   def sendMessageToIntermediary(message: MessageFromBrain) {
     earBrainIntermediary ! message
     //shortPause
   }
   
   def shortPause {
-    Utils.sleep(SLEEP_SHORT_PAUSE)
+    Utils.sleep(Brain.SLEEP_SHORT_PAUSE)
     // TODO this isn't the right place for this, just testing
     microphone.clear
   }
@@ -119,7 +181,7 @@ with Logging
    * of SLEEP_AFTER_SPEAKING before returning.
    */
   def speak(textToSpeak: String) {
-    speak(textToSpeak, SLEEP_AFTER_SPEAKING)
+    speak(textToSpeak, Brain.SLEEP_AFTER_SPEAKING)
   }
   
   /**
@@ -153,7 +215,7 @@ with Logging
       // TODO working here; "say" command may be executed in a script
       log.info("(Brain)    calling appleScriptEngine.eval(command)")
       appleScriptEngine.eval(command)
-      Utils.sleep(SLEEP_AFTER_APPLESCRIPT_COMMAND)
+      Utils.sleep(Brain.SLEEP_AFTER_APPLESCRIPT_COMMAND)
       microphone.clear
     } catch {
       case e: ScriptException => e.printStackTrace
@@ -165,7 +227,7 @@ with Logging
   }
 
   // handle the text the computer thinks the user said
-  def handleVoiceCommand(whatTheComputerThinksISaid:String):Unit = {
+  def handleVoiceCommand(whatTheComputerThinksISaid:String) {
 
     if (whatTheComputerThinksISaid==null || whatTheComputerThinksISaid.trim().equals("")) return
     val textTheUserSaid = whatTheComputerThinksISaid.toLowerCase()
@@ -217,7 +279,7 @@ with Logging
       return true
     }
 
-    // special 'go to sleep' action
+//    // special 'go to sleep' action
     else if (!inSleepMode && textTheUserSaid.matches(".*go to sleep.*")) {
       doGoToSleepActions
       return true
@@ -229,22 +291,22 @@ with Logging
     }
 
     // special 'wake up' action
-    else if (inSleepMode && textTheUserSaid.matches(".*wake up.*")) {
-      doWakeUpActions
-      return true
-    }
+//    else if (inSleepMode && textTheUserSaid.matches(".*wake up.*")) {
+//      doWakeUpActions
+//      return true
+//    }
     
     return false
   }
   
   def replyToUserSayingThankYou {
     val textToSay = getRandomStringFromFile(sarah.getDataFileDirectory + "/" + REPLY_TO_THANK_YOU_FILE)
-    speak(textToSay, SLEEP_AFTER_SPEAKING_SHORT)
+    speak(textToSay, Brain.SLEEP_AFTER_SPEAKING_SHORT)
   }
   
   def replyToUserSayingComputer {
     val textToSay = getRandomStringFromFile(sarah.getDataFileDirectory + "/" + SAY_YES_FILE)
-    speak(textToSay, SLEEP_AFTER_SPEAKING_SHORT)
+    speak(textToSay, Brain.SLEEP_AFTER_SPEAKING_SHORT)
   }
   
   /**
@@ -322,20 +384,6 @@ with Logging
     runAppleScriptCommand(appleScriptCommand)
   }
   
-  def doGoToSleepActions {
-    sarah.updateUISarahIsSleeping
-    inSleepMode = true
-    speak("Going to sleep")
-    printMode
-  }
-
-  def doWakeUpActions {
-    sarah.updateUISarahIsListening
-    inSleepMode = false
-    speak("I'm awake")
-    printMode()
-  }
-
   def printMode() {
     System.out.format ("(Brain) ListeningMode:        %s\n", if (inSleepMode) "QUIET/SLEEP" else "NORMAL")
   }  

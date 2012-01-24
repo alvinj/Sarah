@@ -9,11 +9,6 @@ import java.awt.Color
 
 class MicrophonePanel extends JPanel {
   
-  val SARAH_IS_SLEEPING_COLOR      = Color.DARK_GRAY
-  val SARAH_IS_SPEAKING_COLOR      = new Color(255, 250, 205)  // yellow chiffon
-  val SARAH_IS_LISTENING_COLOR     = new Color(170, 194, 156)  // green color
-  val SARAH_IS_NOT_LISTENING_COLOR = new Color(128, 128, 128)  // grey
-
   val micImage = new ImageIcon(classOf[com.devdaily.sarah.Sarah].getResource("microphone-image.png"))
   val imageLabel = new JLabel(micImage)
   val flowLayout = new FlowLayout
@@ -21,20 +16,24 @@ class MicrophonePanel extends JPanel {
   this.setLayout(flowLayout)
   this.add(imageLabel)
   
+  def setSarahIsSleepingButHeardSomething {
+    this.setBackground(MicrophoneMainFrameController.SARAH_IS_SLEEPING_BUT_HEARD_SOMETHING_COLOR)
+  }
+
   def setSarahIsSleeping {
-    this.setBackground(SARAH_IS_SLEEPING_COLOR)
+    this.setBackground(MicrophoneMainFrameController.SARAH_IS_SLEEPING_COLOR)
   }
 
   def setSarahIsSpeaking {
-    this.setBackground(SARAH_IS_SPEAKING_COLOR)
+    this.setBackground(MicrophoneMainFrameController.SARAH_IS_SPEAKING_COLOR)
   }
 
   def setSarahIsListening {
-    this.setBackground(SARAH_IS_LISTENING_COLOR)
+    this.setBackground(MicrophoneMainFrameController.SARAH_IS_LISTENING_COLOR)
   }
 
   def setSarahIsNotListening {
-    this.setBackground(SARAH_IS_NOT_LISTENING_COLOR)
+    this.setBackground(MicrophoneMainFrameController.SARAH_IS_NOT_LISTENING_COLOR)
   }
 
 }
