@@ -1,15 +1,13 @@
 Sarah Project README File
 
 
+FOR DEVELOPERS
 
-                            *** WARNING ***
-
-  As of this wekend, January 22, 2012, SARAH is in a pretty dramatic state of
-  flux, and you probably don't want to download the project right now. I hope
-  to be finished with all these drastic changes in a day or two. I'm putting
-  a user interface on SARAH, and as a result, many files are being moved
-  to new locations, with many configuration and build changes as well.
-
+  Several classes in this project are currently a bit of a mess due to many
+  changes over the last 2-3 days (and a forced schedule). As soon as I get 
+  back to working on SARAH again, the first thing I'll do is clean up 
+  classes like Sarah.scala and Brain.scala, which are probably in the worst 
+  shape.
 
 
 
