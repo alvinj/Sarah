@@ -18,4 +18,20 @@ The Dispatch URL:
 
    * I left off last night calling the Yahoo PHP apps from Sarah to do most of the work.
    * I either need to use those PHP apps as a web service like this, or ditch them.
-   
+
+---++ Required Jar Files
+
+Until I get this working with SBT, here are notes on required jar files.
+
+For JavaMail:
+
+   * dsn
+   * imap
+   * mailapi
+   * pop3
+   * smtp
+
+For Lift-JSON:
+
+   * lift-json*
+   * paranamer

@@ -17,7 +17,8 @@ trait SarahPlugin {
    */
   def connectToBrain(brain: Brain) {
     this.brain = brain
-    brain.addPluginModule(this)
+    // tell the brain to add us to its list of plugins
+    brain ! this
   }
   
   def startPlugin 

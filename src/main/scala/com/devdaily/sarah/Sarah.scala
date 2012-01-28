@@ -48,33 +48,11 @@ import javax.swing.JOptionPane
  */
 object Sarah extends Logging {
   
-  def main(args: Array[String]) {
-
-    val sarah = new Sarah
-    sarah.startRunning
-    
-  }
-  
-} // end of object
-
-
-/**
- * This is the main Sarah class. Along with its companion object, everything starts here.
- * TODO - this class has grown out of control, and needs to be refactored.
- */
-class Sarah {
-
-  /**
-   * REMEMBER, all code up here is basically the no-args constructor
-   * ---------------------------------------------------------------
-   */
-
   val APP_NAME = "SARAH"
   val EXIT_CODE_CANT_START_MIC = 5
   val EXIT_CODE_NOT_RUNNING_ON_MAC = 2
   val INITIAL_FRAME_COLOR = new Color(170, 194, 156)
 
-  // TODO all of these constants probably need to go somewhere else
   val REL_DATA_DIR          = "Sarah/data"
   val REL_LOGFILE_DIR       = "Sarah/logs"
   val REL_PLUGINS_DIR       = "Sarah/plugins"
@@ -89,21 +67,47 @@ class Sarah {
   val CANON_DEBUG_FILENAME  = CANON_LOGFILE_DIR + FILE_PATH_SEPARATOR + LOG_FILENAME
   val SARAH_CONFIG_FILE     = CANON_DATA_DIR + FILE_PATH_SEPARATOR + JSGF_FILENAME
   
+  // states sarah can be in
+  val SARAH_IS_LISTENING                    = 1
+  val SARAH_IS_NOT_LISTENING                = 2
+  val SARAH_IS_SLEEPING                     = 3
+  val SARAH_IS_SLEEPING_BUT_HEARD_SOMETHING = 4
+  val SARAH_IS_SPEAKING                     = 5
+  
   val SPLASH_SCREEN_IMAGE   = "sarah-splash-image.png"
 
+  /* kick off the app, and hold on */
+  def main(args: Array[String]) {
+    val sarah = new Sarah
+    sarah.startRunning
+  }
+  
+} // end of object
+
+
+/**
+ * This is the main Sarah class. Along with its companion object, everything starts here.
+ * TODO - this class has grown out of control, and needs to be refactored.
+ */
+class Sarah {
+
+  /** this is a shared state variable that all actors can access */
+  private var state = Sarah.SARAH_IS_NOT_LISTENING
+  
   // TODO get logging going to the sarah.log file
   val log = com.weiglewilczek.slf4s.Logger("Sarah")
 
   // TODO populate this list of plugins
   var pluginInstances = ArrayBuffer[SarahPlugin]()
   
-  val splashImage = new ImageIcon(classOf[com.devdaily.sarah.Sarah].getResource(SPLASH_SCREEN_IMAGE))
+  val splashImage = new ImageIcon(classOf[com.devdaily.sarah.Sarah].getResource(Sarah.SPLASH_SCREEN_IMAGE))
   var screen = new SplashScreen(splashImage)
   screen.setLocationRelativeTo(null)
   screen.setProgressMax(100)
   screen.setScreenVisible(true)
   screen.setProgress("Starting SARAH ...", 10)
 
+  // TODO move plugins back up here?
   screen.setProgress("Finding plugins ...", 15)
 
   // TODO - merge voice command files
@@ -114,7 +118,7 @@ class Sarah {
   //dieIfNotRunningOnMacOsX
 
   screen.setProgress("Connecting to microphone ...", 50)
-  val cm = new ConfigurationManager(SARAH_CONFIG_FILE)
+  val cm = new ConfigurationManager(Sarah.SARAH_CONFIG_FILE)
   val recognizer = cm.lookup("recognizer").asInstanceOf[Recognizer]
   val microphone = cm.lookup("microphone").asInstanceOf[Microphone]
   recognizer.allocate
@@ -125,11 +129,9 @@ class Sarah {
   // and 'ears' available to me in setter methods. these two objects need to know about
   // each other.
   val brain = new Brain(this, microphone, recognizer, null)
-  val ears  = new Ears(microphone, recognizer, null)
-  val earBrainIntermediary = new EarBrainIntermediary(brain, ears)
-  
-  brain.earBrainIntermediary = earBrainIntermediary
-  ears.earBrainIntermediary = earBrainIntermediary
+  val ears  = new Ears(this, microphone, recognizer, brain)
+  val mouth = new Mouth(this, brain)
+  brain.mouth = mouth
 
   screen.setProgress("Starting SARAH's interface ...", 90)
   destroySplashScreen
@@ -143,42 +145,40 @@ class Sarah {
   // END constructor
 
   // TODO probably a better way to do these
-  def getDataFileDirectory = CANON_DATA_DIR
-  def getLogFileDirectory  = CANON_LOGFILE_DIR
-  def getFilePathSeparator = FILE_PATH_SEPARATOR
+  def getDataFileDirectory = Sarah.CANON_DATA_DIR
+  def getLogFileDirectory  = Sarah.CANON_LOGFILE_DIR
+  def getFilePathSeparator = Sarah.FILE_PATH_SEPARATOR
   
   def startRunning {
-    // start the actor threads
-    earBrainIntermediary.start
-    brain.start
-    ears.start
-  
+    
+    brain.start; Utils.sleep(250)
+    mouth.start; Utils.sleep(250)
+
     loadPlugins
     
+    ears.start
+    
+    Utils.sleep(1000)
+    brain ! PleaseSay("Hello, Al")
+  
   }
 
-  /**
-   * SARAH is speaking, listening, or not listening.
-   * -----------------------------------------------
-   */
-  def updateUISarahIsSleeping {
-    mainFrameController.updateUISarahIsSleeping
+  /* sarah is always in one state or another; the brain, mouth, and ears can change the state */
+  def setCurrentState(currentState: Int) {
+    state = currentState
+    state match {
+      case Sarah.SARAH_IS_LISTENING =>                    mainFrameController.updateUISarahIsListening
+      case Sarah.SARAH_IS_NOT_LISTENING =>                mainFrameController.updateUISarahIsNotListening
+      case Sarah.SARAH_IS_SLEEPING =>                     mainFrameController.updateUISarahIsSleeping
+      case Sarah.SARAH_IS_SLEEPING_BUT_HEARD_SOMETHING => mainFrameController.updateUISarahIsSleepingButHeardSomething
+      case Sarah.SARAH_IS_SPEAKING =>                     mainFrameController.updateUISarahIsSpeaking
+    }
   }
-
-  def updateUISarahIsSleepingButHeardSomething {
-    mainFrameController.updateUISarahIsSleepingButHeardSomething
-  }
-
-  def updateUISarahIsSpeaking {
-    mainFrameController.updateUISarahIsSpeaking
-  }
-
-  def updateUISarahIsListening {
-    mainFrameController.updateUISarahIsListening
-  }
-
-  def updateUISarahIsNotListening {
-    mainFrameController.updateUISarahIsNotListening
+  
+  def getState = state
+  
+  def clearMicrophone {
+    microphone.clear
   }
   
   def destroySplashScreen {
@@ -203,8 +203,8 @@ class Sarah {
   
   def loadPlugins {
     // get a list of subdirs in the plugins dir, assume each is a plugin
-    log.info("Getting list of PLUGIN subdirectories, looking in '" + CANON_PLUGINS_DIR + "'")
-    val pluginDirs = getListOfSubDirectories(CANON_PLUGINS_DIR)
+    log.info("Getting list of PLUGIN subdirectories, looking in '" + Sarah.CANON_PLUGINS_DIR + "'")
+    val pluginDirs = getListOfSubDirectories(Sarah.CANON_PLUGINS_DIR)
     log.info("pluginDirs.length = " + pluginDirs.length)
     
     // trying to keep things simple here. if anything goes wrong in the functions we call,
@@ -212,27 +212,24 @@ class Sarah {
     try {
       log.info("About to loop over pluginDirs ...")
       for (pluginDir <- pluginDirs) {
-        val canonPluginDir = CANON_PLUGINS_DIR + FILE_PATH_SEPARATOR + pluginDir
+        val canonPluginDir = Sarah.CANON_PLUGINS_DIR + Sarah.FILE_PATH_SEPARATOR + pluginDir
         log.info("Looking at PLUGIN DIR: " + canonPluginDir)
         val pluginInfoFilename = getPluginInfoFilename(canonPluginDir)
         log.info("pluginInfoFilename = " + pluginInfoFilename)
-        val pluginProperties = getPluginProperties(canonPluginDir + FILE_PATH_SEPARATOR + pluginInfoFilename)
+        val pluginProperties = getPluginProperties(canonPluginDir + Sarah.FILE_PATH_SEPARATOR + pluginInfoFilename)
         log.info("read pluginProperties")
         val pluginJarFilename = getPluginJarFilename(canonPluginDir)
         log.info("pluginJarFilename = " + pluginJarFilename)
         val mainClassName = pluginProperties.get("main_class").get
         log.info("mainClassName = " + mainClassName)
-        val canonJarFilename = canonPluginDir + FILE_PATH_SEPARATOR + pluginJarFilename
+        val canonJarFilename = canonPluginDir + Sarah.FILE_PATH_SEPARATOR + pluginJarFilename
         log.info("canonJarFilename = " + canonJarFilename)
         val pluginInstance = getPluginInstance(canonJarFilename, mainClassName)
         log.info("created pluginInstance")
-//        pluginInstance.mainClass = mainClassName
-//        log.info("pluginInstance.mainClass = " + pluginInstance.mainClass)
-//        pluginInstance.pluginName = pluginProperties.get("plugin_name").getOrElse("NO NAME")
-//        log.info("pluginInstance.name = " + pluginInstance.pluginName)
         log.info("GOT PLUGIN INSTANCE")
         pluginInstances += pluginInstance
       } // end for loop
+      
       log.info("Looping through plugin instances ...")
       for (plugin <- pluginInstances) {
         log.info("Trying to start plugin instance: " + plugin.toString())
@@ -241,6 +238,10 @@ class Sarah {
     } catch {
       case e: Exception => // ignore, and move on to next plugin
            log.error("Had a problem loading a plugin. See previous exceptions.")
+      case e: RuntimeException =>
+           log.error("Got a RuntimeException loading a plugin." + e.getMessage)
+      case e: Error =>
+           log.error("Got an Error loading a plugin." + e.getMessage)
     }
   }
 
@@ -359,7 +360,7 @@ class Sarah {
     if ( !mrjVersionExists || !osNameExists)
     {
       System.err.println("SARAH is not running on a Mac OS X system, terminating.")
-      System.exit(EXIT_CODE_NOT_RUNNING_ON_MAC)
+      System.exit(Sarah.EXIT_CODE_NOT_RUNNING_ON_MAC)
     }
   }
   
@@ -368,7 +369,7 @@ class Sarah {
     // set some mac-specific properties; helps when i don't use ant to build the code
     System.setProperty("apple.awt.graphics.EnableQ2DX", "true")
     System.setProperty("apple.laf.useScreenMenuBar", "true")
-    System.setProperty("com.apple.mrj.application.apple.menu.about.name", APP_NAME)
+    System.setProperty("com.apple.mrj.application.apple.menu.about.name", Sarah.APP_NAME)
 
     // create an instance of the Mac Application class, so i can handle the 
     // mac quit event with the Mac ApplicationAdapter
@@ -458,10 +459,9 @@ class Sarah {
   // TODO get this code to work properly. System.exit isn't really exiting.
   def shutdown {
     println("Shutting down.")
-    earBrainIntermediary ! Die
     brain ! Die
     //ears  ! Die
-    Utils.sleep(1000)
+    Utils.sleep(500)
     System.exit(0)
   }
   
@@ -469,7 +469,7 @@ class Sarah {
     if (!microphone.startRecording()) {
       println("Cannot start the microphone, aborting.");
       recognizer.deallocate();
-      System.exit(EXIT_CODE_CANT_START_MIC)
+      System.exit(Sarah.EXIT_CODE_CANT_START_MIC)
     }
   }
     

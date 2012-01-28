@@ -19,6 +19,8 @@ import javax.swing.JOptionPane
 
 class MicrophoneMainFrameController(sarah: Sarah) extends BaseMainFrameController {
 
+  val SLEEP_TO_AVOID_FLICKER = 250
+  
   // constructor
   val headerPanel = new MicrophoneMainFrameHeaderPanel
   val microphonePanel = new MicrophonePanel
@@ -33,7 +35,7 @@ class MicrophoneMainFrameController(sarah: Sarah) extends BaseMainFrameControlle
     invokeLater(microphonePanel.setSarahIsSleepingButHeardSomething)
     invokeLater(headerPanel.setSarahIsSleepingButHeardSomething)
     // want a little pause here, otherwise this is just a flicker
-    Utils.sleep(Brain.SLEEP_500_MS)
+    Utils.sleep(SLEEP_TO_AVOID_FLICKER)
   } 
   def updateUISarahIsSleeping {
     invokeLater(microphonePanel.setSarahIsSleeping)
@@ -61,6 +63,7 @@ class MicrophoneMainFrameController(sarah: Sarah) extends BaseMainFrameControlle
     val textToShow = sb.toString
     val window = new DisplayTextWindow(getMainFrame, textToShow)
     invokeLater(window.setVisible(true))
+    // TODO really want to let the user dispose this window
     Utils.sleep(5000)
     invokeLater(window.setVisible(false))
   }

@@ -8,7 +8,7 @@ import com.devdaily.sarah.Sarah
 import java.awt.Color
 
 class MicrophonePanel extends JPanel {
-  
+
   val micImage = new ImageIcon(classOf[com.devdaily.sarah.Sarah].getResource("microphone-image.png"))
   val imageLabel = new JLabel(micImage)
   val flowLayout = new FlowLayout

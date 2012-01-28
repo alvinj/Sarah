@@ -11,6 +11,11 @@ case class MessageFromEars(textFromUser: String)
 case class MessageFromBrain(message: String)
 
 /**
+ * A wrapper class to help the Brain tell the Mouth what to say.
+ */
+case class SpeakMessageFromBrain(message: String)
+
+/**
  * Used to send a "die" message to the actors.
  */
 case class Die

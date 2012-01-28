@@ -3,9 +3,21 @@ package com.devdaily.sarah.plugins
 import java.text.DateFormat
 import java.util.Calendar
 import java.text.SimpleDateFormat
+import scala.io.Source
+import scala.util.Random
 
 object Utils {
   
+  /**
+   * Gets a random string from the given file. The file is assumed to have one or more
+   * lines of strings that are meant to be read in as an array/list.
+   */
+  def getRandomStringFromFile(canonicalFilename: String): String = {
+    val options = Source.fromFile(canonicalFilename).getLines.toList
+    return options(Random.nextInt(options.length))
+  }
+  
+
   /**
    * sleepTime is in millis.
    */
