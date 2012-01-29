@@ -6,7 +6,7 @@ import java.text.SimpleDateFormat
 import scala.io.Source
 import scala.util.Random
 
-object Utils {
+object PluginUtils {
   
   /**
    * Gets a random string from the given file. The file is assumed to have one or more
@@ -17,6 +17,16 @@ object Utils {
     return options(Random.nextInt(options.length))
   }
   
+  def getFileContentsAsString(canonicalFilename: String): String = {
+    return Source.fromFile(canonicalFilename).mkString
+  }
+  
+  def getFileContentsAsList(canonicalFilename: String): List[String] = {
+    return Source.fromFile(canonicalFilename).getLines.toList
+  }
+
+  val getFilepathSeparator = System.getProperty("file.separator")
+  val getUserHomeDir = System.getProperty("user.home")
 
   /**
    * sleepTime is in millis.

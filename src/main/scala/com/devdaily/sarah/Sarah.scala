@@ -151,14 +151,15 @@ class Sarah {
   
   def startRunning {
     
-    brain.start; Utils.sleep(250)
-    mouth.start; Utils.sleep(250)
+    brain.start; PluginUtils.sleep(250)
+    mouth.start; PluginUtils.sleep(250)
 
     loadPlugins
     
     ears.start
     
-    Utils.sleep(1000)
+    PluginUtils.sleep(1000)
+    setCurrentState(Sarah.SARAH_IS_LISTENING)
     brain ! PleaseSay("Hello, Al")
   
   }
@@ -225,8 +226,8 @@ class Sarah {
         val canonJarFilename = canonPluginDir + Sarah.FILE_PATH_SEPARATOR + pluginJarFilename
         log.info("canonJarFilename = " + canonJarFilename)
         val pluginInstance = getPluginInstance(canonJarFilename, mainClassName)
-        log.info("created pluginInstance")
-        log.info("GOT PLUGIN INSTANCE")
+        log.info("created pluginInstance, setting canonPluginDir")
+        pluginInstance.setPluginDirectory(canonPluginDir)
         pluginInstances += pluginInstance
       } // end for loop
       
@@ -461,7 +462,7 @@ class Sarah {
     println("Shutting down.")
     brain ! Die
     //ears  ! Die
-    Utils.sleep(500)
+    PluginUtils.sleep(500)
     System.exit(0)
   }
   

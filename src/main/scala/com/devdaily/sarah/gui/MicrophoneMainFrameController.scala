@@ -8,7 +8,7 @@ import javax.swing.JPanel
 import javax.swing.ImageIcon
 import javax.swing.JLabel
 import java.awt.FlowLayout
-import com.devdaily.sarah.plugins.Utils
+import com.devdaily.sarah.plugins.PluginUtils
 import com.devdaily.sarah.actors.Brain
 import javax.swing.JEditorPane
 import java.awt.Dimension
@@ -35,7 +35,7 @@ class MicrophoneMainFrameController(sarah: Sarah) extends BaseMainFrameControlle
     invokeLater(microphonePanel.setSarahIsSleepingButHeardSomething)
     invokeLater(headerPanel.setSarahIsSleepingButHeardSomething)
     // want a little pause here, otherwise this is just a flicker
-    Utils.sleep(SLEEP_TO_AVOID_FLICKER)
+    PluginUtils.sleep(SLEEP_TO_AVOID_FLICKER)
   } 
   def updateUISarahIsSleeping {
     invokeLater(microphonePanel.setSarahIsSleeping)
@@ -64,7 +64,7 @@ class MicrophoneMainFrameController(sarah: Sarah) extends BaseMainFrameControlle
     val window = new DisplayTextWindow(getMainFrame, textToShow)
     invokeLater(window.setVisible(true))
     // TODO really want to let the user dispose this window
-    Utils.sleep(5000)
+    PluginUtils.sleep(5000)
     invokeLater(window.setVisible(false))
   }
   

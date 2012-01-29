@@ -30,6 +30,9 @@ trait SarahPlugin {
   // returns true if the phrase was handled.
   def handlePhrase(phrase: String): Boolean
 
+  def setPluginDirectory(dir: String) {
+    // do nothing by default
+  }
   
   
   

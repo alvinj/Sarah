@@ -5,7 +5,7 @@ import com.weiglewilczek.slf4s.Logging
 import com.weiglewilczek.slf4s.Logger
 import com.devdaily.sarah.Sarah
 import com.devdaily.sarah.ComputerVoice
-import com.devdaily.sarah.plugins.Utils
+import com.devdaily.sarah.plugins.PluginUtils
 
 class Mouth(sarah: Sarah, brain: Brain) extends Actor with Logging {
   
@@ -32,13 +32,18 @@ class Mouth(sarah: Sarah, brain: Brain) extends Actor with Logging {
     log.info(format("(%d) about to say (%s)", timestamp, textToSpeak))
     var previousState = sarah.getState
     sarah.setCurrentState(Sarah.SARAH_IS_SPEAKING)
+    val t1 = timestamp
+    log.info(format("just before ComputerVoice.speak (%d)", t1))
     ComputerVoice.speak(textToSpeak)
+    val t2 = timestamp
+    log.info(format("just after ComputerVoice.speak (%d)", t2))
+    log.info(format("time it took to speak (%d)", t2-t1))
     sarah.clearMicrophone
     brain.markThisAsTheLastTimeSarahSpoke
     
     // TODO at some point i should be able to get rid of this artificial
     //      wait time
-    Utils.sleep(brain.delayAfterSpeaking)
+    PluginUtils.sleep(brain.delayAfterSpeaking)
 
     // TODO i'm not convinced this is the right thing to do, but it is
     //      correct to say that sarah is not speaking any more.

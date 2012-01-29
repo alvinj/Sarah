@@ -101,11 +101,16 @@ with Logging
       log.info("")
       react {
         case message: MessageFromEars =>
-             if (sarah.getState == Sarah.SARAH_IS_SPEAKING) {
+             if (sarah.getState == Sarah.SARAH_IS_SPEAKING) 
+             {
                log.info(format("sarah is speaking, ignoring message from ears (%s)", message.textFromUser))
-             } else if (sarahJustFinishedSpeaking) {
+             } 
+             else if (sarahJustFinishedSpeaking)
+             {
                log.info(format("sarah just spoke, ignoring message from ears (%s)", message.textFromUser))
-             } else {
+             } 
+             else
+             {
                // conditions are okay, evaluate what the ears sent us
                handleSomethingWeHeard(message.textFromUser)
              }
@@ -131,7 +136,7 @@ with Logging
   def sarahJustFinishedSpeaking: Boolean = {
     val timeSinceSarahLastSpoke = getCurrentTime - lastTimeSarahSpoke
     log.info(format("timeSinceSarahLastSpoke = %d", timeSinceSarahLastSpoke))
-    val minimumWaitTime = 1000
+    val minimumWaitTime = 1250
     if (timeSinceSarahLastSpoke < minimumWaitTime)
       return true
     else
@@ -258,7 +263,7 @@ with Logging
       log.info("finished appleScriptEngine.eval(command)")
       log.info(format("  timestamp = %d", getCurrentTime))
       // TODO should be able to get rid of this at some point
-      Utils.sleep(delayAfterSpeaking)
+      PluginUtils.sleep(delayAfterSpeaking)
       log.info("LEAVING appleScriptEngine.eval(command)")
       log.info(format("  timestamp = %d", getCurrentTime))
     }
@@ -323,6 +328,7 @@ with Logging
 
     else if (textTheUserSaid.equals("soy lent green is people") ) {
       speak("Live long, and prosper.")
+      PluginUtils.sleep(500)
       sarah.shutdown
       return true
     }
@@ -341,12 +347,12 @@ with Logging
   }
   
   private def replyToUserSayingThankYou {
-    val textToSay = Utils.getRandomStringFromFile(sarah.getDataFileDirectory + "/" + REPLY_TO_THANK_YOU_FILE)
+    val textToSay = PluginUtils.getRandomStringFromFile(sarah.getDataFileDirectory + "/" + REPLY_TO_THANK_YOU_FILE)
     speak(textToSay)
   }
   
   private def replyToUserSayingComputer {
-    val textToSay = Utils.getRandomStringFromFile(sarah.getDataFileDirectory + "/" + SAY_YES_FILE)
+    val textToSay = PluginUtils.getRandomStringFromFile(sarah.getDataFileDirectory + "/" + SAY_YES_FILE)
     speak(textToSay)
   }
   
