@@ -43,7 +43,7 @@ class Mouth(sarah: Sarah, brain: Brain) extends Actor with Logging {
     
     // TODO at some point i should be able to get rid of this artificial
     //      wait time
-    PluginUtils.sleep(brain.delayAfterSpeaking)
+    PluginUtils.sleep(Brain.SHORT_DELAY)
 
     // TODO i'm not convinced this is the right thing to do, but it is
     //      correct to say that sarah is not speaking any more.

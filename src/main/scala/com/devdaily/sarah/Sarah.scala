@@ -1,7 +1,7 @@
 package com.devdaily.sarah
 
 import java.io._
-import java.util._
+import java.util.Properties
 import _root_.com.devdaily.sarah.agents._
 import _root_.com.devdaily.sarah.plugins._
 import edu.cmu.sphinx.frontend.util.Microphone
@@ -53,6 +53,7 @@ object Sarah extends Logging {
   val EXIT_CODE_NOT_RUNNING_ON_MAC = 2
   val INITIAL_FRAME_COLOR = new Color(170, 194, 156)
 
+  val REL_SARAH_ROOT_DIR    = "Sarah"
   val REL_DATA_DIR          = "Sarah/data"
   val REL_LOGFILE_DIR       = "Sarah/logs"
   val REL_PLUGINS_DIR       = "Sarah/plugins"
@@ -65,7 +66,14 @@ object Sarah extends Logging {
   val CANON_LOGFILE         = CANON_LOGFILE_DIR + FILE_PATH_SEPARATOR + LOG_FILENAME 
   val CANON_PLUGINS_DIR     = USER_HOME_DIR + FILE_PATH_SEPARATOR + REL_PLUGINS_DIR
   val CANON_DEBUG_FILENAME  = CANON_LOGFILE_DIR + FILE_PATH_SEPARATOR + LOG_FILENAME
+  val SARAH_ROOT_DIR        = USER_HOME_DIR + FILE_PATH_SEPARATOR + REL_SARAH_ROOT_DIR
   val SARAH_CONFIG_FILE     = CANON_DATA_DIR + FILE_PATH_SEPARATOR + JSGF_FILENAME
+  
+  // properties file
+  val REL_SARAH_PROPERTIES_FILENAME      = "Sarah.properties"
+  val CANON_SARAH_PROPERTIES_FILENAME    = SARAH_ROOT_DIR + FILE_PATH_SEPARATOR + REL_SARAH_PROPERTIES_FILENAME
+  val PROPS_USERNAME_KEY                 = "your_name"
+  val PROPS_TIME_TO_SLEEP_AFTER_SPEAKING = "sleep_after_speaking"
   
   // states sarah can be in
   val SARAH_IS_LISTENING                    = 1
@@ -107,6 +115,14 @@ class Sarah {
   screen.setScreenVisible(true)
   screen.setProgress("Starting SARAH ...", 10)
 
+  // load properties
+  var usersName = "Al"
+  var timeToWaitAfterSpeaking = 1250
+  loadSarahPropertiesFile(Sarah.CANON_SARAH_PROPERTIES_FILENAME)
+  log.info("USERNAME:            " + usersName)
+  log.info("WAIT AFTER SPEAKING: " + timeToWaitAfterSpeaking)
+
+  
   // TODO move plugins back up here?
   screen.setProgress("Finding plugins ...", 15)
 
@@ -132,6 +148,7 @@ class Sarah {
   val ears  = new Ears(this, microphone, recognizer, brain)
   val mouth = new Mouth(this, brain)
   brain.mouth = mouth
+  brain.setMinimumWaitAfterSpeakingTime(timeToWaitAfterSpeaking)
 
   screen.setProgress("Starting SARAH's interface ...", 90)
   destroySplashScreen
@@ -148,7 +165,18 @@ class Sarah {
   def getDataFileDirectory = Sarah.CANON_DATA_DIR
   def getLogFileDirectory  = Sarah.CANON_LOGFILE_DIR
   def getFilePathSeparator = Sarah.FILE_PATH_SEPARATOR
-  
+
+  def loadSarahPropertiesFile(canonConfigFilename: String) {
+    val properties = new Properties
+    val in = new FileInputStream(canonConfigFilename)
+    properties.load(in)
+    in.close
+    usersName = properties.getProperty(Sarah.PROPS_USERNAME_KEY)
+    val tmp = properties.getProperty(Sarah.PROPS_TIME_TO_SLEEP_AFTER_SPEAKING)
+    timeToWaitAfterSpeaking = tmp.toInt
+  }
+
+
   def startRunning {
     
     brain.start; PluginUtils.sleep(250)
@@ -160,7 +188,7 @@ class Sarah {
     
     PluginUtils.sleep(1000)
     setCurrentState(Sarah.SARAH_IS_LISTENING)
-    brain ! PleaseSay("Hello, Al")
+    brain ! PleaseSay("Hello, " + usersName)
   
   }
 
@@ -177,6 +205,7 @@ class Sarah {
   }
   
   def getState = state
+  
   
   def clearMicrophone {
     microphone.clear
@@ -235,6 +264,7 @@ class Sarah {
       for (plugin <- pluginInstances) {
         log.info("Trying to start plugin instance: " + plugin.toString())
         connectInstanceToBrain(plugin)
+        startPlugin(plugin)
       }
     } catch {
       case e: Exception => // ignore, and move on to next plugin
@@ -276,10 +306,14 @@ class Sarah {
   def connectInstanceToBrain(pluginInstance: SarahPlugin) {
     log.info("connecting instance to brain")
     pluginInstance.connectToBrain(brain)
+  }
+
+  def startPlugin(pluginInstance: SarahPlugin) {
     log.info("starting plugin")
     pluginInstance.startPlugin
     log.info("started plugin")
   }
+
   
   /**
    * Get the plugin properties (plugin_name, main_class), or throw an exception.

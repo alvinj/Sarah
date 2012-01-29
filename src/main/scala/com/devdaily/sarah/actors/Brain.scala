@@ -22,6 +22,11 @@ import scala.collection.mutable.ArrayBuffer
 
 object Brain {
 
+  val SHORT_DELAY = 500
+  val REPLY_TO_THANK_YOU_FILE = "thank_you_replies.data"
+  val REPLY_TO_COMPUTER_FILE  = "computer_replies.data"
+  val SAY_YES_FILE            = "say_yes.data"
+    
 }
 
 /**
@@ -46,10 +51,6 @@ extends Actor
 with Logging
 {
   
-  val REPLY_TO_THANK_YOU_FILE = "thank_you_replies.data"
-  val REPLY_TO_COMPUTER_FILE  = "computer_replies.data"
-  val SAY_YES_FILE            = "say_yes.data"
-
   /**
    * SarahPlugin support
    * -------------------
@@ -67,8 +68,13 @@ with Logging
   // the mouth needs access to these.
   private var lastTimeSarahSpoke = System.currentTimeMillis 
   def getCurrentTime = System.currentTimeMillis
-  var delayAfterSpeaking = 500
-  
+
+  var minimumWaitTime = 1250
+  // let sarah set this with her new properties file
+  def setMinimumWaitAfterSpeakingTime(t: Int) {
+    minimumWaitTime = t
+  }
+
   def markThisAsTheLastTimeSarahSpoke {
     lastTimeSarahSpoke = getCurrentTime
     log.info(format("lastTimeSarahSpoke = %d", getCurrentTime))
@@ -136,7 +142,6 @@ with Logging
   def sarahJustFinishedSpeaking: Boolean = {
     val timeSinceSarahLastSpoke = getCurrentTime - lastTimeSarahSpoke
     log.info(format("timeSinceSarahLastSpoke = %d", timeSinceSarahLastSpoke))
-    val minimumWaitTime = 1250
     if (timeSinceSarahLastSpoke < minimumWaitTime)
       return true
     else
@@ -263,7 +268,7 @@ with Logging
       log.info("finished appleScriptEngine.eval(command)")
       log.info(format("  timestamp = %d", getCurrentTime))
       // TODO should be able to get rid of this at some point
-      PluginUtils.sleep(delayAfterSpeaking)
+      PluginUtils.sleep(Brain.SHORT_DELAY)
       log.info("LEAVING appleScriptEngine.eval(command)")
       log.info(format("  timestamp = %d", getCurrentTime))
     }
@@ -347,12 +352,12 @@ with Logging
   }
   
   private def replyToUserSayingThankYou {
-    val textToSay = PluginUtils.getRandomStringFromFile(sarah.getDataFileDirectory + "/" + REPLY_TO_THANK_YOU_FILE)
+    val textToSay = PluginUtils.getRandomStringFromFile(sarah.getDataFileDirectory + "/" + Brain.REPLY_TO_THANK_YOU_FILE)
     speak(textToSay)
   }
   
   private def replyToUserSayingComputer {
-    val textToSay = PluginUtils.getRandomStringFromFile(sarah.getDataFileDirectory + "/" + SAY_YES_FILE)
+    val textToSay = PluginUtils.getRandomStringFromFile(sarah.getDataFileDirectory + "/" + Brain.SAY_YES_FILE)
     speak(textToSay)
   }
   
