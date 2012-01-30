@@ -36,5 +36,17 @@ class MicrophonePanel extends JPanel {
     this.setBackground(MicrophoneMainFrameController.SARAH_IS_NOT_LISTENING_COLOR)
   }
 
+  def setSarahIsAwake {
+    this.setBackground(MicrophoneMainFrameController.SARAH_IS_LISTENING_COLOR)
+  }
+
+  def setSarahIsInLightSleep {
+    this.setBackground(MicrophoneMainFrameController.SARAH_IS_SLEEPING_COLOR)
+  }
+
+  def setSarahIsInDeepSleep {
+    this.setBackground(MicrophoneMainFrameController.SARAH_IS_SLEEPING_COLOR)
+  }
+
 }
 

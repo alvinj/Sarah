@@ -27,11 +27,9 @@ class Mouth(sarah: Sarah, brain: Brain) extends Actor with Logging {
    * before returning.
    */
   def speak(textToSpeak: String) {
-    // TODO may want to check the time sarah last spoke. think about this
-    //      when i'm not so tired.
+    // TODO sarah may want to speak, even in a light sleep or deep sleep; account for that
     log.info(format("(%d) about to say (%s)", timestamp, textToSpeak))
-    var previousState = sarah.getState
-    sarah.setCurrentState(Sarah.SARAH_IS_SPEAKING)
+    sarah.setMouthState(Sarah.MOUTH_STATE_SPEAKING)
     val t1 = timestamp
     log.info(format("just before ComputerVoice.speak (%d)", t1))
     ComputerVoice.speak(textToSpeak)
@@ -40,14 +38,11 @@ class Mouth(sarah: Sarah, brain: Brain) extends Actor with Logging {
     log.info(format("time it took to speak (%d)", t2-t1))
     sarah.clearMicrophone
     brain.markThisAsTheLastTimeSarahSpoke
+    sarah.setMouthState(Sarah.MOUTH_STATE_NOT_SPEAKING)
     
     // TODO at some point i should be able to get rid of this artificial
     //      wait time
     PluginUtils.sleep(Brain.SHORT_DELAY)
-
-    // TODO i'm not convinced this is the right thing to do, but it is
-    //      correct to say that sarah is not speaking any more.
-    sarah.setCurrentState(previousState)
   }
   
 

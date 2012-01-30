@@ -18,12 +18,8 @@ class Hal9000MainFrameController(sarah: Sarah) extends BaseMainFrameController {
   def getMainFrame = mainFrame
   
   // do nothing ... yet
-  def updateUISarahIsSleepingButHeardSomething {}
-  def updateUISarahIsSleeping {}
-  def updateUISarahIsSpeaking {}
-  def updateUISarahIsListening {}
-  def updateUISarahIsNotListening {}
-
+  def updateUIBasedOnStates {}
+  
 }
 
 /**

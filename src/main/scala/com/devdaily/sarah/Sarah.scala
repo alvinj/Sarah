@@ -74,13 +74,20 @@ object Sarah extends Logging {
   val CANON_SARAH_PROPERTIES_FILENAME    = SARAH_ROOT_DIR + FILE_PATH_SEPARATOR + REL_SARAH_PROPERTIES_FILENAME
   val PROPS_USERNAME_KEY                 = "your_name"
   val PROPS_TIME_TO_SLEEP_AFTER_SPEAKING = "sleep_after_speaking"
+
+  // mouth states
+  val MOUTH_STATE_SPEAKING     = 1
+  val MOUTH_STATE_NOT_SPEAKING = 2
   
-  // states sarah can be in
-  val SARAH_IS_LISTENING                    = 1
-  val SARAH_IS_NOT_LISTENING                = 2
-  val SARAH_IS_SLEEPING                     = 3
-  val SARAH_IS_SLEEPING_BUT_HEARD_SOMETHING = 4
-  val SARAH_IS_SPEAKING                     = 5
+  // ear states
+  val EARS_STATE_LISTENING       = 100  
+  val EARS_STATE_NOT_LISTENING   = 200  
+  val EARS_STATE_HEARD_SOMETHING = 300
+  
+  // sarah's states of being awake of asleep
+  val AWARENESS_STATE_AWAKE       = 10
+  val AWARENESS_STATE_LIGHT_SLEEP = 20
+  val AWARENESS_STATE_DEEP_SLEEP  = 30
   
   val SPLASH_SCREEN_IMAGE   = "sarah-splash-image.png"
 
@@ -100,7 +107,9 @@ object Sarah extends Logging {
 class Sarah {
 
   /** this is a shared state variable that all actors can access */
-  private var state = Sarah.SARAH_IS_NOT_LISTENING
+  private var mouthState = Sarah.MOUTH_STATE_NOT_SPEAKING
+  private var awarenessState = Sarah.AWARENESS_STATE_AWAKE
+  private var earsState = Sarah.EARS_STATE_LISTENING
   
   // TODO get logging going to the sarah.log file
   val log = com.weiglewilczek.slf4s.Logger("Sarah")
@@ -156,6 +165,7 @@ class Sarah {
   //val mainFrameController = new Hal9000MainFrameController(this)
   val mainFrameController = new MicrophoneMainFrameController(this)
   val mainFrame = mainFrameController.getMainFrame
+  mainFrameController.updateUIBasedOnStates
   displayMainFrame
 
 
@@ -166,6 +176,62 @@ class Sarah {
   def getLogFileDirectory  = Sarah.CANON_LOGFILE_DIR
   def getFilePathSeparator = Sarah.FILE_PATH_SEPARATOR
 
+
+  def startRunning {
+    brain.start; PluginUtils.sleep(250)
+    mouth.start; PluginUtils.sleep(250)
+
+    loadPlugins
+    
+    ears.start
+    
+    PluginUtils.sleep(1000)
+    brain ! PleaseSay("Hello, " + usersName)
+  }
+
+  /**
+   * Code to handle the different states sarah can be in.
+   * ----------------------------------------------------
+   */
+  
+  def getEarsState = earsState
+  def getMouthState = mouthState
+  def getAwarenessState = awarenessState
+  
+  // TODO the brain and mainFrameController should be the only two entities that can wake
+  //      sarah up. the brain will do that based on a voice command from the user, and 
+  //      the controller based on the user doing something via the ui.
+  def setAwarenessState(state: Int) {
+    awarenessState = state
+    mainFrameController.updateUIBasedOnStates
+  }
+  
+  def setEarsState(state: Int) {
+    earsState = state
+    mainFrameController.updateUIBasedOnStates
+  }
+  
+  def setMouthState(state: Int) {
+    mouthState = state
+    mainFrameController.updateUIBasedOnStates
+  }
+
+  // use this method when setting multiple states at the same time
+  def setStates(awareness: Int, ears: Int, mouth: Int) {
+    awarenessState = awareness
+    earsState = ears
+    mouthState = mouth
+    mainFrameController.updateUIBasedOnStates
+  }
+  
+  def updateUI {
+    mainFrameController.updateUIBasedOnStates
+  }
+  
+  def clearMicrophone {
+    microphone.clear
+  }
+  
   def loadSarahPropertiesFile(canonConfigFilename: String) {
     val properties = new Properties
     val in = new FileInputStream(canonConfigFilename)
@@ -176,41 +242,6 @@ class Sarah {
     timeToWaitAfterSpeaking = tmp.toInt
   }
 
-
-  def startRunning {
-    
-    brain.start; PluginUtils.sleep(250)
-    mouth.start; PluginUtils.sleep(250)
-
-    loadPlugins
-    
-    ears.start
-    
-    PluginUtils.sleep(1000)
-    setCurrentState(Sarah.SARAH_IS_LISTENING)
-    brain ! PleaseSay("Hello, " + usersName)
-  
-  }
-
-  /* sarah is always in one state or another; the brain, mouth, and ears can change the state */
-  def setCurrentState(currentState: Int) {
-    state = currentState
-    state match {
-      case Sarah.SARAH_IS_LISTENING =>                    mainFrameController.updateUISarahIsListening
-      case Sarah.SARAH_IS_NOT_LISTENING =>                mainFrameController.updateUISarahIsNotListening
-      case Sarah.SARAH_IS_SLEEPING =>                     mainFrameController.updateUISarahIsSleeping
-      case Sarah.SARAH_IS_SLEEPING_BUT_HEARD_SOMETHING => mainFrameController.updateUISarahIsSleepingButHeardSomething
-      case Sarah.SARAH_IS_SPEAKING =>                     mainFrameController.updateUISarahIsSpeaking
-    }
-  }
-  
-  def getState = state
-  
-  
-  def clearMicrophone {
-    microphone.clear
-  }
-  
   def destroySplashScreen {
     screen.setVisible(false)
     screen = null

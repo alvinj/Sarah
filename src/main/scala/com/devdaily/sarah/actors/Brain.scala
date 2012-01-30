@@ -62,7 +62,12 @@ with Logging
     pluginModules += plugin
   }
 
-  def inSleepMode: Boolean = if (sarah.getState == Sarah.SARAH_IS_SLEEPING) true else false
+  def inSleepMode: Boolean = {
+    if (sarah.getAwarenessState == Sarah.AWARENESS_STATE_AWAKE)
+      return false
+    else
+      return true
+  } 
 
   // use these two to help track when sarah last spoke.
   // the mouth needs access to these.
@@ -107,7 +112,7 @@ with Logging
       log.info("")
       react {
         case message: MessageFromEars =>
-             if (sarah.getState == Sarah.SARAH_IS_SPEAKING) 
+             if (sarah.getMouthState == Sarah.MOUTH_STATE_SPEAKING) 
              {
                log.info(format("sarah is speaking, ignoring message from ears (%s)", message.textFromUser))
              } 
@@ -178,58 +183,45 @@ with Logging
     if (inSleepMode)
     {
       // if we're sleeping, the only request we respond to is "wake up"
-      sarah.setCurrentState(Sarah.SARAH_IS_SLEEPING_BUT_HEARD_SOMETHING)
+      sarah.setEarsState(Sarah.EARS_STATE_HEARD_SOMETHING)
       handleWakeUpRequestIfReceived(whatWeHeard)
     }
     else
     {
       // TODO review this code (too tired right now)
       // not in sleep mode, so handle whatever we heard
-      sarah.setCurrentState(Sarah.SARAH_IS_NOT_LISTENING)
+      sarah.setEarsState(Sarah.EARS_STATE_NOT_LISTENING)
       handleVoiceCommand(whatWeHeard)
-      // even if sarah goes to sleep, it needs to listen for commands, in particular
-      // the 'wake up' command
-      sarah.setCurrentState(Sarah.SARAH_IS_LISTENING)
-      // handling the voice command may have flipped us into sleep mode
-      updateUiBasedOnCurrentSleepMode
+      sarah.setEarsState(Sarah.EARS_STATE_LISTENING)
      }
   }
   
-  private def updateUiBasedOnCurrentSleepMode {
-    if (inSleepMode)
-      sarah.setCurrentState(Sarah.SARAH_IS_NOT_LISTENING)
-    else
-      sarah.setCurrentState(Sarah.SARAH_IS_LISTENING)
-  }
-
   /**
    * handle the wake-up request if it was received.
    * otherwise, go back to sleep.
    */
   private def handleWakeUpRequestIfReceived(whatTheComputerThinksISaid: String) {
+    val prevSleepState = sarah.getAwarenessState
     if (whatTheComputerThinksISaid.matches(".*wake up.*")) {
       doWakeUpActions
     } else {
-      // didn't get a 'wake up' request, so make sure this is set back to sleeping
-      sarah.setCurrentState(Sarah.SARAH_IS_SLEEPING)
+      sarah.setEarsState(Sarah.EARS_STATE_LISTENING)
+      sarah.setAwarenessState(prevSleepState)
     }
   }
   
   // TODO this is probably a bug here; probably need to separate sleeping and listening concepts
   private def doGoToSleepActions {
-    sarah.setCurrentState(Sarah.SARAH_IS_SLEEPING)
     speak("Going to sleep")
     // always need to tell intermediary to start listening after we've finished speaking
-    sarah.setCurrentState(Sarah.SARAH_IS_LISTENING)
+    sarah.setStates(Sarah.AWARENESS_STATE_LIGHT_SLEEP, Sarah.EARS_STATE_LISTENING, Sarah.MOUTH_STATE_NOT_SPEAKING)
     printMode
   }
 
   private def doWakeUpActions {
     speak("Okay, I'm awake")
-    sarah.setCurrentState(Sarah.SARAH_IS_LISTENING)
-    printMode()
+    sarah.setStates(Sarah.AWARENESS_STATE_AWAKE, Sarah.EARS_STATE_LISTENING, Sarah.MOUTH_STATE_NOT_SPEAKING)
   }
-
 
   /**
    * "speak" functionality has been moved to the mouth,
@@ -248,10 +240,11 @@ with Logging
    * 
    */
   private def runAppleScriptCommand(command: String) {
+    // TODO handle the sarah awareness states properly
     log.info("ENTERED runAppleScriptCommand FUNCTION")
     // sarah is probably going to speak here
-    sarah.setCurrentState(Sarah.SARAH_IS_SPEAKING)
-    val previousState = sarah.getState
+    val prevAwarenessState = sarah.getAwarenessState
+    sarah.setStates(prevAwarenessState, Sarah.EARS_STATE_NOT_LISTENING, Sarah.MOUTH_STATE_SPEAKING)
     try {
       log.info("calling appleScriptEngine.eval(command)")
       log.info(format("  timestamp = %d", getCurrentTime))
@@ -263,7 +256,7 @@ with Logging
     } finally {
       // TODO is it correct to set this back to the previous state, or
       //      should i set it to 'listening'?
-      sarah.setCurrentState(previousState)
+      sarah.setStates(prevAwarenessState, Sarah.EARS_STATE_LISTENING, Sarah.MOUTH_STATE_NOT_SPEAKING)
       markThisAsTheLastTimeSarahSpoke
       log.info("finished appleScriptEngine.eval(command)")
       log.info(format("  timestamp = %d", getCurrentTime))
