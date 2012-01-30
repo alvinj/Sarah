@@ -298,6 +298,9 @@ with Logging
       // there were no matches; check the plugins registered with sarah
       log.info(format("phraseToCommandMap didn't have key (%s), trying plugins", textTheUserSaid))
       val handled = sarah.tryToHandleTextWithPlugins(textTheUserSaid)
+      if (handled) {
+        sarah.setStates(sarah.getAwarenessState, Sarah.EARS_STATE_LISTENING, Sarah.MOUTH_STATE_NOT_SPEAKING)
+      }
       // this function doesn't care if it was handled (refactor)
     }
   }

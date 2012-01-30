@@ -144,9 +144,23 @@ class Sarah {
 
   screen.setProgress("Connecting to microphone ...", 50)
   val cm = new ConfigurationManager(Sarah.SARAH_CONFIG_FILE)
+  screen.setProgress("Getting recognizer ...", 50)
   val recognizer = cm.lookup("recognizer").asInstanceOf[Recognizer]
+  screen.setProgress("Getting microphone ...", 50)
   val microphone = cm.lookup("microphone").asInstanceOf[Microphone]
+  screen.setProgress("Allocating reocognizer ...", 50)
+
+  log.info("RECOGNIZER STATE: " + recognizer.getState.toString)
+  
+  //recognizer.deallocate
+  //PluginUtils.sleep(1000)
+  
+  //log.info("EXITING ...")
+  //System.exit(0)
+  
   recognizer.allocate
+  
+  screen.setProgress("Starting mic recording ...", 50)
   startMicRecordingOrDie(recognizer, microphone)
 
   screen.setProgress("Starting SARAH's brain ...", 75)
@@ -255,6 +269,9 @@ class Sarah {
     log.info("tryToHandleTextWithPlugins, TEXT = " + textTheUserSaid)
     // loop through the plugins, and see if any can handle what was said
     for (plugin <- pluginInstances) {
+      
+      // TODO plugins need to be able to update sarah's state 
+      
       val handled = plugin.handlePhrase(textTheUserSaid)
       if (handled) return true
     }
@@ -525,6 +542,10 @@ class Sarah {
   // TODO get this code to work properly. System.exit isn't really exiting.
   def shutdown {
     println("Shutting down.")
+    // TODO may want to wait a few moments and keep checking this state before quitting
+    if (recognizer.getState == Recognizer.State.READY) {
+      recognizer.deallocate
+    }
     brain ! Die
     //ears  ! Die
     PluginUtils.sleep(500)
@@ -533,8 +554,8 @@ class Sarah {
   
   def startMicRecordingOrDie(recognizer: Recognizer, microphone: Microphone) {
     if (!microphone.startRecording()) {
-      println("Cannot start the microphone, aborting.");
-      recognizer.deallocate();
+      println("Cannot start the microphone, aborting.")
+      recognizer.deallocate
       System.exit(Sarah.EXIT_CODE_CANT_START_MIC)
     }
   }
