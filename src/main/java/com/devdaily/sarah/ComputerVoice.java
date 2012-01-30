@@ -42,19 +42,6 @@ public class ComputerVoice
                                           RALPH, ALBERT, BAD_NEWS, BAHH, BELLS, BOING, BUBBLES, CELLOS, DERANGED,
                                           GOOD_NEWS, HYSTERICAL, PIPE_ORGAN, TRINOIDS, WHISPER, ZARVOX};
   
-//  private static final String[] YES_MASTER = {"Yes, master", 
-//                                              "At your command",
-//                                              "Okey dokey", 
-//                                              "You bet ya",
-//                                              "You got it" };
-//  
-//  public static String getYesMaster()
-//  {
-//    Random r = new Random();
-//    int n = r.nextInt(YES_MASTER.length-1);
-//    return YES_MASTER[n];
-//  }
-  
   public static boolean isValidVoice(String desiredVoice)
   {
     for (String s : VOICES)
@@ -64,20 +51,20 @@ public class ComputerVoice
     return false;
   }
 
-  public static void speakHal(String sentence)
-  {
-    String thingToSay = "say \"" + sentence + "\" using \"Bruce\" speaking rate 138 modulation 18 pitch 41";
-    ScriptEngineManager mgr = new ScriptEngineManager();
-    ScriptEngine engine = mgr.getEngineByName("AppleScript");
-    try
-    {
-      engine.eval(thingToSay);
-    }
-    catch (ScriptException e)
-    {
-      // TODO deal with this properly
-    }
-  }
+//  public static void speakHal(String sentence)
+//  {
+//    String thingToSay = "say \"" + sentence + "\" using \"Bruce\" speaking rate 138 modulation 18 pitch 41";
+//    ScriptEngineManager mgr = new ScriptEngineManager();
+//    ScriptEngine engine = mgr.getEngineByName("AppleScript");
+//    try
+//    {
+//      engine.eval(thingToSay);
+//    }
+//    catch (ScriptException e)
+//    {
+//      // TODO deal with this properly
+//    }
+//  }
 
   
   public static void speak(String sentence)

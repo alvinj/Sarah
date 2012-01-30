@@ -38,11 +38,8 @@ class Mouth(sarah: Sarah, brain: Brain) extends Actor with Logging {
     log.info(format("time it took to speak (%d)", t2-t1))
     sarah.clearMicrophone
     brain.markThisAsTheLastTimeSarahSpoke
-    sarah.setMouthState(Sarah.MOUTH_STATE_NOT_SPEAKING)
-    
-    // TODO at some point i should be able to get rid of this artificial
-    //      wait time
     PluginUtils.sleep(Brain.SHORT_DELAY)
+    sarah.setMouthState(Sarah.MOUTH_STATE_NOT_SPEAKING)
   }
   
 

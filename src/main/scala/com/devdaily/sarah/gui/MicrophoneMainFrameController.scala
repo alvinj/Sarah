@@ -44,6 +44,7 @@ class MicrophoneMainFrameController(sarah: Sarah) extends BaseMainFrameControlle
       invokeLater(microphonePanel.setSarahIsSpeaking)
       invokeLater(headerPanel.setSarahIsSpeaking)
       PluginUtils.sleep(SLEEP_TO_AVOID_FLICKER)
+      return
     }
 
     // now branch off, initially based on awareness
