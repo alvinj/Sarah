@@ -62,12 +62,36 @@ with Logging
     pluginModules += plugin
   }
 
+  // @deprecated
   def inSleepMode: Boolean = {
     if (sarah.getAwarenessState == Sarah.AWARENESS_STATE_AWAKE)
       return false
     else
       return true
-  } 
+  }
+  
+  def sarahIsAwake: Boolean = {
+    if (sarah.getAwarenessState == Sarah.AWARENESS_STATE_AWAKE)
+      return false
+    else
+      return true
+  }
+  
+  def sarahIsInLightSleep: Boolean = {
+    if (sarah.getAwarenessState == Sarah.AWARENESS_STATE_LIGHT_SLEEP)
+      return false
+    else
+      return true
+  }
+  
+  def sarahIsInDeepSleep: Boolean = {
+    if (sarah.getAwarenessState == Sarah.AWARENESS_STATE_DEEP_SLEEP)
+      return false
+    else
+      return true
+  }
+  
+
 
   // use these two to help track when sarah last spoke.
   // the mouth needs access to these.
@@ -219,7 +243,7 @@ with Logging
   }
 
   private def doWakeUpActions {
-    speak("Okay, I'm awake")
+    speak("I'm awake now.")
     sarah.setStates(Sarah.AWARENESS_STATE_AWAKE, Sarah.EARS_STATE_LISTENING, Sarah.MOUTH_STATE_NOT_SPEAKING)
   }
 
