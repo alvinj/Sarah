@@ -69,6 +69,7 @@ public class ComputerVoice
   
   public static void speak(String sentence)
   {
+    System.out.println("(ComputerVoice) ENTERED SPEAK(" + sentence + ") AT " + System.currentTimeMillis());    
     String thingToSay = "say \"" + sentence + "\"";
     ScriptEngineManager mgr = new ScriptEngineManager();
     ScriptEngine engine = mgr.getEngineByName("AppleScript");

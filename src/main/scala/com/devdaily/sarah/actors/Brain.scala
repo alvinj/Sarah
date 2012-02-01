@@ -133,6 +133,8 @@ with Logging
     loop {
       log.info("")
       log.info("********  THE BRAIN IS READY  ********")
+      val s = format("          (%d)", System.currentTimeMillis)
+      log.info(s)
       log.info("")
       react {
         case message: MessageFromEars =>
@@ -150,6 +152,8 @@ with Logging
                handleSomethingWeHeard(message.textFromUser)
              }
         case pleaseSay: PleaseSay =>
+             val s = format("(BRAIN) GOT PLEASE-SAY REQUEST (%s) AT (%d)", pleaseSay.textToSay, System.currentTimeMillis)
+             println(s)
              handlePleaseSayRequest(pleaseSay)
         case plugin: SarahPlugin =>
              addPluginModule(plugin)
@@ -196,6 +200,8 @@ with Logging
       // it's not right for us to set state here, so we don't. 
       // we don't know when sarah will actually say this, because requests to speak
       // may be backed up.
+      val s = format("(BRAIN) CALLING SPEAK(%s) AT (%d)", pleaseSay.textToSay, System.currentTimeMillis)
+      println(s)
       speak(pleaseSay.textToSay)
     }
   }
@@ -253,6 +259,8 @@ with Logging
    * -------------------------------------------------
    */
   private def speak(textToSpeak: String) {
+    val s = format("(BRAIN) SENDING MSG (%s) TO MOUTH AT (%d)", textToSpeak, System.currentTimeMillis)
+    println(s)
     mouth ! SpeakMessageFromBrain(textToSpeak)
   }
   
