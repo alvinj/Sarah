@@ -12,6 +12,7 @@ import edu.cmu.sphinx.linguist.language.grammar.GrammarNode
 import edu.cmu.sphinx.recognizer.Recognizer
 import edu.cmu.sphinx.result.Result
 import edu.cmu.sphinx.util.props.ConfigurationManager
+import akka.actor._
 import actors._
 import scala.xml._
 import collection.Map
@@ -23,15 +24,15 @@ import javax.swing.JFrame
 import java.awt.Toolkit
 import java.awt.Color
 import javax.swing.ImageIcon
-import com.devdaily.splashscreen.SplashScreen
 import scala.collection.mutable.ArrayBuffer
 import java.awt.BorderLayout
 import java.util.logging.FileHandler
 import java.util.logging.Logger
-import com.weiglewilczek.slf4s.Logging
-import com.weiglewilczek.slf4s.Logger
-import com.devdaily.sarah.gui.MicrophoneMainFrameController
-import com.devdaily.sarah.gui.Hal9000MainFrameController
+import _root_.com.devdaily.splashscreen.SplashScreen
+import _root_.com.weiglewilczek.slf4s.Logging
+import _root_.com.weiglewilczek.slf4s.Logger
+import _root_.com.devdaily.sarah.gui.MicrophoneMainFrameController
+import _root_.com.devdaily.sarah.gui.Hal9000MainFrameController
 import javax.swing.JEditorPane
 import java.awt.Dimension
 import java.awt.Insets
@@ -152,18 +153,22 @@ class Sarah {
   startMicRecordingOrDie(recognizer, microphone)
 
   screen.setProgress("Starting SARAH's brain ...", 75)
-  // i'm passing in nulls here because i don't know a better way to make 'brain'
-  // and 'ears' available to me in setter methods. these two objects need to know about
-  // each other.
-  val brain = new Brain(this, microphone, recognizer, null)
-  val ears  = new Ears(this, microphone, recognizer, brain)
-  val mouth = new Mouth(this, brain)
-  brain.setMouth(mouth)
-  brain.setMinimumWaitAfterSpeakingTime(timeToWaitAfterSpeaking)
 
+  log.info("creating ActorSystem and actors")
+  val system = ActorSystem("Sarah")
+  val brain = system.actorOf(Props(new Brain(this, microphone, recognizer, null)), name = "Brain")
+  val ears = system.actorOf(Props(new Ears(this, microphone, recognizer)), name = "Ears")
+  val mouth = system.actorOf(Props(new Mouth(this)), name = "Mouth")
+  
+  // TODO brain will need to connect to Mouth
+  //brain.setMouth(mouth)
+  log.info("sending waitTime message to Brain")
+  brain ! MinimumWaitTimeAfterSpeaking(timeToWaitAfterSpeaking)
+  
   screen.setProgress("Starting SARAH's interface ...", 90)
   destroySplashScreen
 
+  log.info("about to display main frame")
   //val mainFrameController = new Hal9000MainFrameController(this)
   val mainFrameController = new MicrophoneMainFrameController(this)
   val mainFrame = mainFrameController.getMainFrame
@@ -181,30 +186,13 @@ class Sarah {
 
   def startRunning {
     
-    log.info("STARTING BRAIN ...")
-    brain.start 
+    // TODO add this back in
+    //log.info("ASKING BRAIN TO SAY HELLO ...")
+    //brain ! PleaseSay("Hello, " + usersName)
 
-    log.info("STARTING MOUTH ...")
-    mouth.trapBrainExit
-    mouth.start 
-
-    log.info("LOADING PLUGINS ...")
-    loadPlugins
-    
-    log.info("STARTING EARS ...")
-    ears.start
-
-//    log.info("STARTING PLUGINS ...")
-//    // trying to defer the 'start' call until now
-//    for (plugin <- pluginInstances) {
-//      log.info("starting plugin instance: " + plugin.toString)
-//      startPlugin(plugin)
-//    }
-    //PluginUtils.sleep(1000)
-    
-    log.info("ASKING BRAIN TO SAY HELLO ...")
-    brain ! PleaseSay("Hello, " + usersName)
-
+    log.info("sending first two messages to ears")
+    ears ! StartListeningMessage
+    ears ! InitEarsMessage
     log.info("SARAH:startRunning IS COMPLETE ...")
   }
 
@@ -361,7 +349,9 @@ class Sarah {
   
   def connectInstanceToBrain(pluginInstance: SarahPlugin) {
     log.info("connecting instance to brain")
-    pluginInstance.connectToBrain(brain)
+
+    // TODO add this back in
+    //pluginInstance.connectToBrain(brain)
   }
 
   def startPlugin(pluginInstance: SarahPlugin) {

@@ -1,6 +1,6 @@
 package com.devdaily.sarah.actors
 
-import scala.actors._
+import akka.actor._
 import scala.util.Random
 import scala.collection.mutable.ListBuffer
 import edu.cmu.sphinx.frontend.util.Microphone
@@ -23,11 +23,13 @@ import scala.collection.mutable.ArrayBuffer
 object Brain {
 
   val SHORT_DELAY = 500
-  val REPLY_TO_THANK_YOU_FILE = "thank_you_replies.data"
-  val REPLY_TO_COMPUTER_FILE  = "computer_replies.data"
-  val SAY_YES_FILE            = "say_yes.data"
+  val REPLY_TO_THANK_YOU_FILE = "thank_you_replies.data"  // when the user says "thank you"
+  val REPLY_TO_COMPUTER_FILE  = "computer_replies.data"   // when the user says "computer"
+  val SAY_YES_FILE            = "say_yes.data"            // different ways of saying "yes"
     
 }
+
+case class MinimumWaitTimeAfterSpeaking(waitTime: Int)
 
 /**
  * The Brain has the responsibility of deciphering whatever input it
@@ -47,7 +49,7 @@ class Brain(sarah: Sarah,
             microphone: Microphone, 
             recognizer: Recognizer, 
             var mouth: Mouth) 
-extends Actor
+extends akka.actor.Actor
 with Logging
 {
   
@@ -57,6 +59,15 @@ with Logging
   /**
    * SarahPlugin support
    * -------------------
+   * 
+   * Is there a better way to get these states out of the brain? They're written like this
+   * so callers can get an immediate idea of Sarah's state, but this violates the actor model.
+   * The problem is that if the caller has to wait to get the state by using the actor
+   * mailbox, the state may have changed while it waited for the response. The solution may be
+   * that plugins should not make these calls; they should just do what they're written to
+   * do, and send the information via the mailbox, but that seems wasteful, such as at
+   * night when Sarah should just be sleeping.
+   * 
    */
 
   // @deprecated
@@ -88,14 +99,15 @@ with Logging
       return true
   }
 
-  // want to use a method like this b/c all the actors won't have references
+  // need to use a method like this b/c all the actors won't have references
   // when they're first created
   def setMouth(m: Mouth) {
     this.mouth = m   
     // trying to offload functionality to other actors so the brain
     // can respond faster
+    
+    // TODO this is an actor, change the way it is created
     brainPleaseSayHelper = new BrainPleaseSayHelper(mouth)
-    brainPleaseSayHelper.start
   }
   
 
@@ -104,8 +116,8 @@ with Logging
   private var lastTimeSarahSpoke = System.currentTimeMillis 
   def getCurrentTime = System.currentTimeMillis
 
-  var minimumWaitTime = 1250
   // let sarah set this with her new properties file
+  var minimumWaitTime = 1250
   def setMinimumWaitAfterSpeakingTime(t: Int) {
     minimumWaitTime = t
   }
@@ -131,49 +143,34 @@ with Logging
   
   val log = Logger("Brain")
 
-  // TODO yes, i know this code is a mess and needs to be refactored. 
-  //      there are a lot of kludges to handle the problem
-  //      where i can't turn the microphone off.
-  def act() {
-    log.info("in act()")
-    loop {
-      log.info("")
-      log.info("********  THE BRAIN IS READY  ********")
-      val s = format("          (%d)", System.currentTimeMillis)
-      log.info(s)
-      log.info("")
-      react {
-        case message: MessageFromEars =>
-             if (sarah.getMouthState == Sarah.MOUTH_STATE_SPEAKING) {
-               log.info(format("sarah is speaking, ignoring message from ears (%s)", message.textFromUser))
-             } 
-             else if (sarahJustFinishedSpeaking) {
-               log.info(format("sarah just spoke, ignoring message from ears (%s)", message.textFromUser))
-             } 
-             else {
-               // conditions are okay, evaluate what the ears sent us
-               handleSomethingWeHeard(message.textFromUser)
-             }
-        case pleaseSay: PleaseSay =>
-             val s = format("got PleaseSay request (%s) at (%d)", pleaseSay.textToSay, System.currentTimeMillis)
-             log.info(s)
-             handlePleaseSayRequest(pleaseSay)
-        case playSoundFileRequest: PlaySoundFileRequest =>
-             val s = format("got PlaySoundFile request (%s) at (%d)", playSoundFileRequest.soundFile, System.currentTimeMillis)
-             log.info(s)
-             handlePlaySoundFileRequest(playSoundFileRequest)
-        case string: String =>
-             log.info(format("got String message (%s), ignoring it", string))
-        case Die =>
-             log.info("*** GOT DIE MESSAGE, EXITING ***")
-             exit
-        case unknown => 
-             log.info(format("got an unknown request(%s), ignoring it", unknown.toString))
-      }
-      log.info("*** BRAIN REACHED END OF react{} ***")
-    } // end loop
-    log.error("*** BRAIN LEFT LOOP(), LEAVING ACT() ***")
-  } // end act
+  def receive = {
+    case MinimumWaitTimeAfterSpeaking(waitTime) =>
+         setMinimumWaitAfterSpeakingTime(waitTime)
+    case message: MessageFromEars =>
+         if (sarah.getMouthState == Sarah.MOUTH_STATE_SPEAKING) {
+           log.info(format("sarah is speaking, ignoring message from ears (%s)", message.textFromUser))
+         } 
+         else if (sarahJustFinishedSpeaking) {
+           log.info(format("sarah just spoke, ignoring message from ears (%s)", message.textFromUser))
+         } 
+         else {
+           // conditions are okay, evaluate what the ears sent us
+           handleSomethingWeHeard(message.textFromUser)
+         }
+    case pleaseSay: PleaseSay =>
+         log.info(format("got a 'PleaseSay' request (%s) at (%d)", pleaseSay.textToSay, System.currentTimeMillis))
+         handlePleaseSayRequest(pleaseSay)
+    case playSoundFileRequest: PlaySoundFileRequest =>
+         log.info(format("got PlaySoundFile request (%s) at (%d)", playSoundFileRequest.soundFile, System.currentTimeMillis))
+         handlePlaySoundFileRequest(playSoundFileRequest)
+    case string: String =>
+         log.info(format("got String message (%s), ignoring it", string))
+    case Die =>
+         log.info("*** GOT DIE MESSAGE, EXITING ***")
+         exit
+    case unknown => 
+         log.info(format("got an unknown request(%s), ignoring it", unknown.toString))
+  } // end receive
   
   override def finalize {
     log.error("*** BRAIN DIED OR GOT FINALIZE MESSAGE ***")
@@ -196,13 +193,12 @@ with Logging
   private def handlePleaseSayRequest(pleaseSay: PleaseSay) {
     try {
       if (inSleepMode) {
-        val s = format("in sleep mode, NOT passing on PleaseSay request (%s)", pleaseSay.textToSay)
-        log.info(s)
+        log.info(format("in sleep mode, NOT passing on PleaseSay request (%s)", pleaseSay.textToSay))
       }
       else {
-        val s = format("passing PleaseSay request to BrainPleaseSayHelper (%s)", pleaseSay.textToSay)
-        log.info(s)
-        brainPleaseSayHelper ! pleaseSay
+        log.info(format("passing PleaseSay request to BrainPleaseSayHelper (%s)", pleaseSay.textToSay))
+        // TODO add this back in
+        //brainPleaseSayHelper ! pleaseSay
       }
     } catch {
       case e: Throwable => log.error("EXCEPTION in handlePleaseSayRequest")
@@ -214,13 +210,12 @@ with Logging
   private def handlePlaySoundFileRequest(playSoundFileRequest: PlaySoundFileRequest) {
     try {
       if (inSleepMode) {
-        val s = format("in sleep mode, NOT passing on PlaySoundFile request (%s)", playSoundFileRequest.soundFile)
-        log.info(s)
+        log.info(format("in sleep mode, NOT passing on PlaySoundFile request (%s)", playSoundFileRequest.soundFile))
       }
       else {
-        val s = format("passing PleaseSay request to BrainPleaseSayHelper (%s)", playSoundFileRequest.soundFile)
-        log.info(s)
-        mouth ! playSoundFileRequest
+        log.info(format("passing PleaseSay request to BrainPleaseSayHelper (%s)", playSoundFileRequest.soundFile))
+        // TODO add this back in
+        //mouth ! playSoundFileRequest
       }
     } catch {
       case e: Throwable => log.error("EXCEPTION in handlePlaySoundFileRequest")
@@ -287,9 +282,9 @@ with Logging
    * -------------------------------------------------
    */
   private def speak(textToSpeak: String) {
-    val s = format("(BRAIN) SENDING MSG (%s) TO MOUTH AT (%d)", textToSpeak, System.currentTimeMillis)
-    println(s)
-    mouth ! SpeakMessageFromBrain(textToSpeak)
+    println(format("(BRAIN) SENDING MSG (%s) TO MOUTH AT (%d)", textToSpeak, System.currentTimeMillis))
+    // TODO add this back in
+    //mouth ! SpeakMessageFromBrain(textToSpeak)
   }
   
   /**
@@ -434,7 +429,6 @@ with Logging
     voiceCommandListForSarah += "please listen"
       
     sarah.displayAvailableVoiceCommands(voiceCommandListForSarah.toList)
-    
   }
   
   private def handleUserDefinedVoiceCommand(textTheUserSaid: String): Boolean = {
