@@ -51,16 +51,13 @@ extends Actor
 with Logging
 {
   
+  // this is set later, when the Mouth reference is set
+  var brainPleaseSayHelper:BrainPleaseSayHelper = null
+
   /**
    * SarahPlugin support
    * -------------------
    */
-  private val pluginModules = new ListBuffer[SarahPlugin]
-  
-  private def addPluginModule(plugin: SarahPlugin) {
-    log.info("adding pluginModule: " + plugin.toString())
-    pluginModules += plugin
-  }
 
   // @deprecated
   def inSleepMode: Boolean = {
@@ -90,8 +87,17 @@ with Logging
     else
       return true
   }
-  
 
+  // want to use a method like this b/c all the actors won't have references
+  // when they're first created
+  def setMouth(m: Mouth) {
+    this.mouth = m   
+    // trying to offload functionality to other actors so the brain
+    // can respond faster
+    brainPleaseSayHelper = new BrainPleaseSayHelper(mouth)
+    brainPleaseSayHelper.start
+  }
+  
 
   // use these two to help track when sarah last spoke.
   // the mouth needs access to these.
@@ -138,34 +144,39 @@ with Logging
       log.info("")
       react {
         case message: MessageFromEars =>
-             if (sarah.getMouthState == Sarah.MOUTH_STATE_SPEAKING) 
-             {
+             if (sarah.getMouthState == Sarah.MOUTH_STATE_SPEAKING) {
                log.info(format("sarah is speaking, ignoring message from ears (%s)", message.textFromUser))
              } 
-             else if (sarahJustFinishedSpeaking)
-             {
+             else if (sarahJustFinishedSpeaking) {
                log.info(format("sarah just spoke, ignoring message from ears (%s)", message.textFromUser))
              } 
-             else
-             {
+             else {
                // conditions are okay, evaluate what the ears sent us
                handleSomethingWeHeard(message.textFromUser)
              }
         case pleaseSay: PleaseSay =>
-             val s = format("(BRAIN) GOT PLEASE-SAY REQUEST (%s) AT (%d)", pleaseSay.textToSay, System.currentTimeMillis)
-             println(s)
+             val s = format("got PleaseSay request (%s) at (%d)", pleaseSay.textToSay, System.currentTimeMillis)
+             log.info(s)
              handlePleaseSayRequest(pleaseSay)
-        case plugin: SarahPlugin =>
-             addPluginModule(plugin)
+        case playSoundFileRequest: PlaySoundFileRequest =>
+             val s = format("got PlaySoundFile request (%s) at (%d)", playSoundFileRequest.soundFile, System.currentTimeMillis)
+             log.info(s)
+             handlePlaySoundFileRequest(playSoundFileRequest)
         case string: String =>
              log.info(format("got String message (%s), ignoring it", string))
         case Die =>
-             log.info("got Die message, exiting")
+             log.info("*** GOT DIE MESSAGE, EXITING ***")
              exit
         case unknown => 
              log.info(format("got an unknown request(%s), ignoring it", unknown.toString))
       }
-    }
+      log.info("*** BRAIN REACHED END OF react{} ***")
+    } // end loop
+    log.error("*** BRAIN LEFT LOOP(), LEAVING ACT() ***")
+  } // end act
+  
+  override def finalize {
+    log.error("*** BRAIN DIED OR GOT FINALIZE MESSAGE ***")
   }
   
   /**
@@ -181,49 +192,66 @@ with Logging
       return false
   }
 
-  /**
-   * The main handler for PleaseSay requests, which typically come from plugins,
-   * and specifically not from the user.
-   * 
-   * Note: Plugins should be allowed to override Sarah's sleepMode, such as in
-   * the case of an alarm clock or reminder.
-   */
+  // all we do now is pass this on to another actor
   private def handlePleaseSayRequest(pleaseSay: PleaseSay) {
-    if (inSleepMode) {
-      // TODO check to see if the plugin has permission to speak while
-      // sarah is in sleep mode
-      log.info("got a PleaseSay request while sarah is in sleep mode (ignoring)")
-      log.info("PleaseSay request: " + pleaseSay.textToSay)
-    }
-    else {
-      log.info(format("handling PleaseSay request (%s)", pleaseSay.textToSay))
-      // it's not right for us to set state here, so we don't. 
-      // we don't know when sarah will actually say this, because requests to speak
-      // may be backed up.
-      val s = format("(BRAIN) CALLING SPEAK(%s) AT (%d)", pleaseSay.textToSay, System.currentTimeMillis)
-      println(s)
-      speak(pleaseSay.textToSay)
+    try {
+      if (inSleepMode) {
+        val s = format("in sleep mode, NOT passing on PleaseSay request (%s)", pleaseSay.textToSay)
+        log.info(s)
+      }
+      else {
+        val s = format("passing PleaseSay request to BrainPleaseSayHelper (%s)", pleaseSay.textToSay)
+        log.info(s)
+        brainPleaseSayHelper ! pleaseSay
+      }
+    } catch {
+      case e: Throwable => log.error("EXCEPTION in handlePleaseSayRequest")
+                           e.printStackTrace
     }
   }
+
+  // TODO duplication with handlePleaseSayRequest, refactor
+  private def handlePlaySoundFileRequest(playSoundFileRequest: PlaySoundFileRequest) {
+    try {
+      if (inSleepMode) {
+        val s = format("in sleep mode, NOT passing on PlaySoundFile request (%s)", playSoundFileRequest.soundFile)
+        log.info(s)
+      }
+      else {
+        val s = format("passing PleaseSay request to BrainPleaseSayHelper (%s)", playSoundFileRequest.soundFile)
+        log.info(s)
+        mouth ! playSoundFileRequest
+      }
+    } catch {
+      case e: Throwable => log.error("EXCEPTION in handlePlaySoundFileRequest")
+                           e.printStackTrace
+    }
+  }
+
 
   /**
    * The main handler for when the ears hear something and send it to us.
    */
   private def handleSomethingWeHeard(whatWeHeard: String) {
-    if (inSleepMode)
-    {
-      // if we're sleeping, the only request we respond to is "wake up"
-      sarah.setEarsState(Sarah.EARS_STATE_HEARD_SOMETHING)
-      handleWakeUpRequestIfReceived(whatWeHeard)
+    try {
+      if (inSleepMode)
+      {
+        // if we're sleeping, the only request we respond to is "wake up"
+        sarah.setEarsState(Sarah.EARS_STATE_HEARD_SOMETHING)
+        handleWakeUpRequestIfReceived(whatWeHeard)
+      }
+      else
+      {
+        // TODO review this code (too tired right now)
+        // not in sleep mode, so handle whatever we heard
+        sarah.setEarsState(Sarah.EARS_STATE_NOT_LISTENING)
+        handleVoiceCommand(whatWeHeard)
+        sarah.setEarsState(Sarah.EARS_STATE_LISTENING)
+       }
+    } catch {
+      case e: Throwable => log.error("EXCEPTION in handleSomethingWeHeard")
+                           e.printStackTrace
     }
-    else
-    {
-      // TODO review this code (too tired right now)
-      // not in sleep mode, so handle whatever we heard
-      sarah.setEarsState(Sarah.EARS_STATE_NOT_LISTENING)
-      handleVoiceCommand(whatWeHeard)
-      sarah.setEarsState(Sarah.EARS_STATE_LISTENING)
-     }
   }
   
   /**

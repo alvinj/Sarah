@@ -9,23 +9,6 @@ import scala.util.Random
 object PluginUtils {
   
   /**
-   * Play the given sound file.
-   * @see http://www.devdaily.com/java/java-play-sound-file-from-command-line-wav-headless-mode
-   */
-  def playSound(soundFile: String) {
-    import java.io.FileInputStream
-    import sun.audio.AudioStream
-    import sun.audio.AudioPlayer
-    try {
-      var in = new FileInputStream(soundFile)
-      val audioStream = new AudioStream(in)
-      AudioPlayer.player.start(audioStream)
-    } catch {
-      case e: Exception => e.printStackTrace
-    }
-  }
-  
-  /**
    * Gets a random string from the given file. The file is assumed to have one or more
    * lines of strings that are meant to be read in as an array/list.
    */

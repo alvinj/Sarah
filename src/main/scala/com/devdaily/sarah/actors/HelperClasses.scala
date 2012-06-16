@@ -19,3 +19,4 @@ case class SpeakMessageFromBrain(message: String)
  * Used to send a "die" message to the actors.
  */
 case class Die
+

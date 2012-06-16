@@ -130,7 +130,6 @@ class Sarah {
   loadSarahPropertiesFile(Sarah.CANON_SARAH_PROPERTIES_FILENAME)
   log.info("USERNAME:            " + usersName)
   log.info("WAIT AFTER SPEAKING: " + timeToWaitAfterSpeaking)
-
   
   // TODO move plugins back up here?
   screen.setProgress("Finding plugins ...", 15)
@@ -139,9 +138,6 @@ class Sarah {
   screen.setProgress("Merging voice commands ...", 25)
   mergeAllVoiceCommandFiles
   
-  
-  //dieIfNotRunningOnMacOsX
-
   screen.setProgress("Connecting to microphone ...", 50)
   val cm = new ConfigurationManager(Sarah.SARAH_CONFIG_FILE)
   screen.setProgress("Getting recognizer ...", 50)
@@ -150,14 +146,6 @@ class Sarah {
   val microphone = cm.lookup("microphone").asInstanceOf[Microphone]
   screen.setProgress("Allocating reocognizer ...", 50)
 
-  log.info("RECOGNIZER STATE: " + recognizer.getState.toString)
-  
-  //recognizer.deallocate
-  //PluginUtils.sleep(1000)
-  
-  //log.info("EXITING ...")
-  //System.exit(0)
-  
   recognizer.allocate
   
   screen.setProgress("Starting mic recording ...", 50)
@@ -170,7 +158,7 @@ class Sarah {
   val brain = new Brain(this, microphone, recognizer, null)
   val ears  = new Ears(this, microphone, recognizer, brain)
   val mouth = new Mouth(this, brain)
-  brain.mouth = mouth
+  brain.setMouth(mouth)
   brain.setMinimumWaitAfterSpeakingTime(timeToWaitAfterSpeaking)
 
   screen.setProgress("Starting SARAH's interface ...", 90)
@@ -192,15 +180,32 @@ class Sarah {
 
 
   def startRunning {
-    brain.start; PluginUtils.sleep(250)
-    mouth.start; PluginUtils.sleep(250)
+    
+    log.info("STARTING BRAIN ...")
+    brain.start 
 
+    log.info("STARTING MOUTH ...")
+    mouth.trapBrainExit
+    mouth.start 
+
+    log.info("LOADING PLUGINS ...")
     loadPlugins
     
+    log.info("STARTING EARS ...")
     ears.start
+
+//    log.info("STARTING PLUGINS ...")
+//    // trying to defer the 'start' call until now
+//    for (plugin <- pluginInstances) {
+//      log.info("starting plugin instance: " + plugin.toString)
+//      startPlugin(plugin)
+//    }
+    //PluginUtils.sleep(1000)
     
-    PluginUtils.sleep(1000)
+    log.info("ASKING BRAIN TO SAY HELLO ...")
     brain ! PleaseSay("Hello, " + usersName)
+
+    log.info("SARAH:startRunning IS COMPLETE ...")
   }
 
   /**
@@ -281,7 +286,7 @@ class Sarah {
   
   def loadPlugins {
     // get a list of subdirs in the plugins dir, assume each is a plugin
-    log.info("Getting list of PLUGIN subdirectories, looking in '" + Sarah.CANON_PLUGINS_DIR + "'")
+    log.info("Getting list of plugin subdirectories, looking in '" + Sarah.CANON_PLUGINS_DIR + "'")
     val pluginDirs = getListOfSubDirectories(Sarah.CANON_PLUGINS_DIR)
     log.info("pluginDirs.length = " + pluginDirs.length)
     
@@ -291,7 +296,8 @@ class Sarah {
       log.info("About to loop over pluginDirs ...")
       for (pluginDir <- pluginDirs) {
         val canonPluginDir = Sarah.CANON_PLUGINS_DIR + Sarah.FILE_PATH_SEPARATOR + pluginDir
-        log.info("Looking at PLUGIN DIR: " + canonPluginDir)
+        log.info("")
+        log.info("LOADING PLUGIN: " + canonPluginDir)
         val pluginInfoFilename = getPluginInfoFilename(canonPluginDir)
         log.info("pluginInfoFilename = " + pluginInfoFilename)
         val pluginProperties = getPluginProperties(canonPluginDir + Sarah.FILE_PATH_SEPARATOR + pluginInfoFilename)
@@ -308,6 +314,7 @@ class Sarah {
         pluginInstances += pluginInstance
       } // end for loop
       
+      // TODO defer startPlugin() until later???
       log.info("Looping through plugin instances ...")
       for (plugin <- pluginInstances) {
         log.info("Trying to start plugin instance: " + plugin.toString())
@@ -334,8 +341,9 @@ class Sarah {
       log.info("  mainClassName = " + mainClassName)
       var classLoader = new java.net.URLClassLoader(Array(new File(canonicalJarFilename).toURI.toURL), this.getClass.getClassLoader)
       log.info("creating new plugin instance as a SarahPlugin ...")
-      
-      // CODE FAILS HERE with AbstractMethodError
+
+      // try to create plugin as an instance of SarahActorBasedPlugin. if that fails, try to create it as an
+      // instance of just a SarahPlugin
 
       var pluginInstance:SarahPlugin = classLoader.loadClass(mainClassName).newInstance.asInstanceOf[SarahPlugin]
 
@@ -357,7 +365,6 @@ class Sarah {
   }
 
   def startPlugin(pluginInstance: SarahPlugin) {
-    log.info("starting plugin")
     pluginInstance.startPlugin
     log.info("started plugin")
   }

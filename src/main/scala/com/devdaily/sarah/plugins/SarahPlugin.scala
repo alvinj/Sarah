@@ -9,16 +9,8 @@ trait SarahPlugin {
   
   var brain: Brain = null
 
-//  var pluginName: String = null
-//  var mainClass: String = null
-  
-  /**
-   * Make connections in both directions, to and from Sarah's brain.
-   */
   def connectToBrain(brain: Brain) {
     this.brain = brain
-    // tell the brain to add us to its list of plugins
-    brain ! this
   }
   
   def startPlugin 

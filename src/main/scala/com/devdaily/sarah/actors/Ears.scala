@@ -27,7 +27,7 @@ with Logging
 {
 
   val log = Logger("Ears")
-
+  
   def act() {
     while (true) {
       val whatIThinkThePersonSaid = recognizer.recognize.getBestFinalResultNoFiller
