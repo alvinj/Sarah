@@ -38,6 +38,10 @@ import java.awt.Dimension
 import java.awt.Insets
 import javax.swing.JScrollPane
 import javax.swing.JOptionPane
+import akka.pattern.ask
+import akka.dispatch.Await
+import akka.util.Timeout
+import akka.util.duration._
 
 
 /**
@@ -76,20 +80,6 @@ object Sarah extends Logging {
   val PROPS_USERNAME_KEY                 = "your_name"
   val PROPS_TIME_TO_SLEEP_AFTER_SPEAKING = "sleep_after_speaking"
 
-  // mouth states
-  val MOUTH_STATE_SPEAKING     = 1
-  val MOUTH_STATE_NOT_SPEAKING = 2
-  
-  // ear states
-  val EARS_STATE_LISTENING       = 100  
-  val EARS_STATE_NOT_LISTENING   = 200  
-  val EARS_STATE_HEARD_SOMETHING = 300
-  
-  // sarah's states of being awake of asleep
-  val AWARENESS_STATE_AWAKE       = 10
-  val AWARENESS_STATE_LIGHT_SLEEP = 20
-  val AWARENESS_STATE_DEEP_SLEEP  = 30
-  
   val SPLASH_SCREEN_IMAGE   = "sarah-splash-image.png"
 
   /* kick off the app, and hold on */
@@ -107,11 +97,6 @@ object Sarah extends Logging {
  */
 class Sarah {
 
-  /** this is a shared state variable that all actors can access */
-  private var mouthState = Sarah.MOUTH_STATE_NOT_SPEAKING
-  private var awarenessState = Sarah.AWARENESS_STATE_AWAKE
-  private var earsState = Sarah.EARS_STATE_LISTENING
-  
   // TODO get logging going to the sarah.log file
   val log = com.weiglewilczek.slf4s.Logger("Sarah")
 
@@ -156,14 +141,13 @@ class Sarah {
 
   log.info("creating ActorSystem and actors")
   val system = ActorSystem("Sarah")
-  val brain = system.actorOf(Props(new Brain(this, microphone, recognizer, null)), name = "Brain")
+  val brain = system.actorOf(Props(new Brain(this, microphone, recognizer)), name = "Brain")
   val ears = system.actorOf(Props(new Ears(this, microphone, recognizer)), name = "Ears")
   val mouth = system.actorOf(Props(new Mouth(this)), name = "Mouth")
   
-  // TODO brain will need to connect to Mouth
-  //brain.setMouth(mouth)
   log.info("sending waitTime message to Brain")
-  brain ! MinimumWaitTimeAfterSpeaking(timeToWaitAfterSpeaking)
+  brain ! SetMinimumWaitTimeAfterSpeaking(timeToWaitAfterSpeaking)
+  brain ! ConnectToSiblings
   
   screen.setProgress("Starting SARAH's interface ...", 90)
   destroySplashScreen
@@ -189,6 +173,8 @@ class Sarah {
     // TODO add this back in
     //log.info("ASKING BRAIN TO SAY HELLO ...")
     //brain ! PleaseSay("Hello, " + usersName)
+    
+    mouth ! InitMouthMessage
 
     log.info("sending first two messages to ears")
     ears ! StartListeningMessage
@@ -197,37 +183,47 @@ class Sarah {
   }
 
   /**
-   * Code to handle the different states sarah can be in.
-   * ----------------------------------------------------
+   * State Management (now in Brain)
+   * ---------------------------------------------
    */
+
+  def getAwarenessState:Int = {
+    getStateFromBrain(GetAwarenessState)
+  }
+
+  def getEarsState:Int = {
+    getStateFromBrain(GetEarsState)
+  }
   
-  def getEarsState = earsState
-  def getMouthState = mouthState
-  def getAwarenessState = awarenessState
+  def getMouthState:Int = {
+    getStateFromBrain(GetMouthState)
+  }
   
-  // TODO the brain and mainFrameController should be the only two entities that can wake
-  //      sarah up. the brain will do that based on a voice command from the user, and 
-  //      the controller based on the user doing something via the ui.
+  private def getStateFromBrain(stateRequestMessage: StateRequestMessage):Int = {
+    implicit val timeout = Timeout(2 seconds)
+    val future = brain ? stateRequestMessage
+    val result = Await.result(future, timeout.duration).asInstanceOf[Int]
+    result
+  }
+  
   def setAwarenessState(state: Int) {
-    awarenessState = state
+    brain ! SetAwarenessState(state)
     mainFrameController.updateUIBasedOnStates
   }
   
   def setEarsState(state: Int) {
-    earsState = state
+    brain ! SetEarsState(state)
     mainFrameController.updateUIBasedOnStates
   }
   
   def setMouthState(state: Int) {
-    mouthState = state
+    brain ! SetMouthState(state)
     mainFrameController.updateUIBasedOnStates
   }
 
   // use this method when setting multiple states at the same time
   def setStates(awareness: Int, ears: Int, mouth: Int) {
-    awarenessState = awareness
-    earsState = ears
-    mouthState = mouth
+    brain ! SetBrainStates(awareness, ears, mouth)
     mainFrameController.updateUIBasedOnStates
   }
   

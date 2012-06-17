@@ -40,7 +40,7 @@ class MicrophoneMainFrameController(sarah: Sarah) extends BaseMainFrameControlle
     // TODO clean up this decision block
     
     // easy one - any time sarah is speaking, use that color
-    if (mouthState == Sarah.MOUTH_STATE_SPEAKING) {
+    if (mouthState == Brain.MOUTH_STATE_SPEAKING) {
       invokeLater(microphonePanel.setSarahIsSpeaking)
       invokeLater(headerPanel.setSarahIsSpeaking)
       PluginUtils.sleep(SLEEP_TO_AVOID_FLICKER)
@@ -49,25 +49,25 @@ class MicrophoneMainFrameController(sarah: Sarah) extends BaseMainFrameControlle
 
     // now branch off, initially based on awareness
     awarenessState match {
-      case Sarah.AWARENESS_STATE_AWAKE => handleAwarenessStateAwake(earsState)
-      case Sarah.AWARENESS_STATE_LIGHT_SLEEP => handleAwarenessStateLightSleep(earsState)
-      case Sarah.AWARENESS_STATE_DEEP_SLEEP =>handleAwarenessStateDeepSleep(earsState)
+      case Brain.AWARENESS_STATE_AWAKE => handleAwarenessStateAwake(earsState)
+      case Brain.AWARENESS_STATE_LIGHT_SLEEP => handleAwarenessStateLightSleep(earsState)
+      case Brain.AWARENESS_STATE_DEEP_SLEEP =>handleAwarenessStateDeepSleep(earsState)
     }
   }
   
   private def handleAwarenessStateAwake(earsState: Int) {
     earsState match {
-      case Sarah.EARS_STATE_LISTENING => updateUISarahIsAwakeAndListening
-      case Sarah.EARS_STATE_NOT_LISTENING => updateUISarahIsAwakeButNotListening
-      case Sarah.EARS_STATE_HEARD_SOMETHING => updateUISarahIsSleepingButHeardSomething
+      case Brain.EARS_STATE_LISTENING => updateUISarahIsAwakeAndListening
+      case Brain.EARS_STATE_NOT_LISTENING => updateUISarahIsAwakeButNotListening
+      case Brain.EARS_STATE_HEARD_SOMETHING => updateUISarahIsSleepingButHeardSomething
     }
   }
 
   private def handleAwarenessStateLightSleep(earsState: Int) {
     earsState match {
-      case Sarah.EARS_STATE_LISTENING => updateUISarahIsSleeping
-      case Sarah.EARS_STATE_NOT_LISTENING => updateUISarahIsSleeping
-      case Sarah.EARS_STATE_HEARD_SOMETHING => updateUISarahIsSleepingButHeardSomething
+      case Brain.EARS_STATE_LISTENING => updateUISarahIsSleeping
+      case Brain.EARS_STATE_NOT_LISTENING => updateUISarahIsSleeping
+      case Brain.EARS_STATE_HEARD_SOMETHING => updateUISarahIsSleepingButHeardSomething
     }
   }
 

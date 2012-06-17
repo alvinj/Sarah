@@ -8,7 +8,7 @@ import com.devdaily.sarah.plugins.PleaseSay
 /**
  * A class to offload "PleaseSay" requests from the Brain.
  */
-class BrainPleaseSayHelper(mouth: Mouth)
+class BrainPleaseSayHelper(mouth: ActorRef)
 extends Actor
 with Logging
 {
@@ -17,18 +17,16 @@ with Logging
 
   def receive = {
     case pleaseSay: PleaseSay =>
-         val s = format("GOT PLEASE-SAY REQUEST (%s) AT (%d)", pleaseSay.textToSay, System.currentTimeMillis)
-         log.info(s)
+         log.info(format("got a please-say request (%s) at (%d)", pleaseSay.textToSay, System.currentTimeMillis))
          handlePleaseSayRequest(pleaseSay)
+
     case unknown => 
          log.info(format("got an unknown request(%s), ignoring it", unknown.toString))
   }
   
   private def handlePleaseSayRequest(pleaseSay: PleaseSay) {
-    val s = format("SENDING MSG (%s) TO MOUTH AT (%d)", pleaseSay.textToSay, System.currentTimeMillis)
-    log.info(s)
-    // TODO add this back in
-    //mouth ! SpeakMessageFromBrain(pleaseSay.textToSay)
+    log.info(format("sending msg (%s) to mouth at (%d)", pleaseSay.textToSay, System.currentTimeMillis))
+    mouth ! SpeakMessageFromBrain(pleaseSay.textToSay)
   }  
   
 }
