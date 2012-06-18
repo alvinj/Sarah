@@ -22,19 +22,22 @@ class Mouth(sarah: Sarah) extends akka.actor.Actor with Logging {
   var mouthHelper:ActorRef = _
 
   def receive = {
+
     case InitMouthMessage =>
          startMouthHelper
     
     case message: SpeakMessageFromBrain =>
-         mouthHelper ! SpeakMessageFromBrain
+         mouthHelper ! message
 
     case playSoundFileRequest: PlaySoundFileRequest =>
          mouthHelper ! playSoundFileRequest
 
-    case MouthIsSpeaking =>          // get this from our helper, pass it on
+    case MouthIsSpeaking =>
+         // get this from our helper, pass it on
          brain ! MouthIsSpeaking
          
-    case MouthIsFinishedSpeaking =>  // get this from our helper, pass it on
+    case MouthIsFinishedSpeaking =>
+         // get this from our helper, pass it on
          brain ! MouthIsFinishedSpeaking
 
     case unknown => 
@@ -42,13 +45,8 @@ class Mouth(sarah: Sarah) extends akka.actor.Actor with Logging {
   }
 
   def startMouthHelper {
-    log.info("got InitMouthMessage")
     mouthHelper = context.actorOf(Props(new MouthHelper(sarah)), name = "MouthHelper")
-    mouthHelper ! InitMouthMessage
   }
-  
-
-  
 
 }
 

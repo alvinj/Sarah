@@ -227,6 +227,11 @@ class Sarah {
     mainFrameController.updateUIBasedOnStates
   }
   
+  /**
+   * UI and Other Code
+   * ---------------------------------------------
+   */
+
   def updateUI {
     mainFrameController.updateUIBasedOnStates
   }

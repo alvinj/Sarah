@@ -27,16 +27,16 @@ with Logging
   val mouth:ActorRef = context.parent
   
   def receive = {
-    case InitMouthMessage => // nothing
 
     case message: SpeakMessageFromBrain =>  
          speak(message.message)
 
     case playSoundFileRequest: PlaySoundFileRequest =>
-         handlePlaySoundFileRequest(playSoundFileRequest)
+         playSoundFile(playSoundFileRequest)
 
     case unknown => 
          log.info(format("got an unknown request(%s), ignoring it", unknown.toString))
+
   }
 
   /**
@@ -44,18 +44,14 @@ with Logging
    * before returning.
    */
   def speak(textToSpeak: String) {
-    //sarah.setMouthState(Sarah.MOUTH_STATE_SPEAKING)
     mouth ! MouthIsSpeaking
     ComputerVoice.speak(textToSpeak)
     sarah.clearMicrophone
-    // TODO add this back in
-    // brain.markThisAsTheLastTimeSarahSpoke
     PluginUtils.sleep(Brain.SHORT_DELAY)
-    //sarah.setMouthState(Sarah.MOUTH_STATE_NOT_SPEAKING)
     mouth ! MouthIsFinishedSpeaking
   }
   
-  def handlePlaySoundFileRequest(playSoundFileRequest: PlaySoundFileRequest) {
+  def playSoundFile(playSoundFileRequest: PlaySoundFileRequest) {
     mouth ! MouthIsSpeaking
     playSound(playSoundFileRequest.soundFile)
     PluginUtils.sleep(Brain.SHORT_DELAY)

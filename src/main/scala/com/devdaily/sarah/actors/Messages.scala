@@ -15,3 +15,13 @@ case object GetEarsState extends StateRequestMessage
 case object GetMouthState extends StateRequestMessage
 case class GetInSleepMode
 
+// brain helper
+
+case class SomethingWasHeard(whatWeHeard: String,
+                             inSleepMode: Boolean,
+                             awarenessState: Int)
+
+
+
+
+

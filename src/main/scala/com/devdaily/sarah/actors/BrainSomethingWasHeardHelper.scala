@@ -22,17 +22,14 @@ import javax.script.ScriptException
 import edu.cmu.sphinx.frontend.util.Microphone
 import com.devdaily.sarah.Sarah
 import java.io.File
-
-case class SomethingWasHeard(whatWeHeard: String,
-                             inSleepMode: Boolean,
-                             awarenessState: Int)
+import com.devdaily.sarah.plugins.PlaySoundFileRequest
 
 class BrainSomethingWasHeardHelper(sarah: Sarah, microphone: Microphone)
 extends Actor
 with Logging
 {
 
-  val log = Logger("BrainPleaseSayHelper")
+  val log = Logger("BrainSomethingWasHeardHelper")
   val brain:ActorRef = context.parent
   var mouth:ActorRef = _
 
@@ -48,11 +45,21 @@ with Logging
   var phraseToCommandMap = new HashMap[String, String]
   
   def receive = {
-    case SomethingWasHeard(whatWeHeard, inSleepMode, awarenessState) => 
-         handleSomethingWeHeard(whatWeHeard, inSleepMode, awarenessState)
+    case SomethingWasHeard(t, s, a) =>
+         handleSomethingWeHeard(t, s, a)
 
+    case playSoundFileRequest: PlaySoundFileRequest =>
+         handleSoundFileRequest(playSoundFileRequest)
+      
     case unknown => 
          log.info(format("got an unknown request(%s), ignoring it", unknown.toString))
+  }
+  
+  /**
+   * TODO move this to another actor, or rename this actor.
+   */
+  def handleSoundFileRequest(playSoundFileRequest: PlaySoundFileRequest) {
+    mouth ! playSoundFileRequest
   }
   
   /**
@@ -63,14 +70,14 @@ with Logging
                                      awarenessState: Int) {
     if (inSleepMode)
     {
+      log.info("in sleep mode, checking to see if this is a WakeUp request")
       // if we're sleeping, the only request we respond to is "wake up"
       brain ! SetEarsState(Brain.EARS_STATE_HEARD_SOMETHING)
       handleWakeUpRequestIfReceived(whatWeHeard, awarenessState)
     }
     else
     {
-      // TODO review this code (too tired right now)
-      // not in sleep mode, so handle whatever we heard
+      log.info("calling handleVoiceCommand")
       brain ! SetEarsState(Brain.EARS_STATE_NOT_LISTENING)
       handleVoiceCommand(whatWeHeard)
       brain ! SetEarsState(Brain.EARS_STATE_LISTENING)
@@ -98,11 +105,10 @@ with Logging
 
   // handle the text the computer thinks the user said
   private def handleVoiceCommand(whatTheComputerThinksISaid: String) {
+    log.info("entered handleVoiceCommand, text is: " + whatTheComputerThinksISaid)
 
-    if (whatTheComputerThinksISaid==null || whatTheComputerThinksISaid.trim().equals("")) {
-      return
-    }
     val textTheUserSaid = whatTheComputerThinksISaid.toLowerCase
+
     // re-load these to let the user change commands while we run
     loadAllUserConfigurationFilesOrDie
 
@@ -159,7 +165,8 @@ with Logging
    * "shut down". Returns true if the voice command was handled.
    */
   private def handleSpecialVoiceCommands(textTheUserSaid: String):Boolean = {
-    
+    log.info("entered handleSpecialVoiceCommands")
+
     if (textTheUserSaid.trim().equals("")) { 
       log.info("(Brain) Got a blank string from Ears, ignoring it.")
       return true
@@ -228,10 +235,12 @@ with Logging
    * -------------------------------------------------
    */
   private def speak(textToSpeak: String) {
-    println(format("(BRAIN) SENDING MSG (%s) TO MOUTH AT (%d)", textToSpeak, System.currentTimeMillis))
+    log.info("entered speak, text is: " + textToSpeak)
     if (mouth == null) {
+      log.info("mouth was null, creating it")
       mouth = context.actorFor("../../Mouth")
     }
+    println(format("sending message (%s) to mouth at (%d)", textToSpeak, System.currentTimeMillis))
     mouth ! SpeakMessageFromBrain(textToSpeak)
   }
   
@@ -250,7 +259,7 @@ with Logging
    */
   private def runAppleScriptCommand(command: String) {
     // TODO handle the sarah awareness states properly
-    log.info("ENTERED runAppleScriptCommand FUNCTION")
+    log.info("entered runAppleScriptCommand")
     // sarah is probably going to speak here
     val prevAwarenessState = getAwarenessState
     brain ! SetBrainStates(prevAwarenessState, Brain.EARS_STATE_NOT_LISTENING, Brain.MOUTH_STATE_SPEAKING)
@@ -303,6 +312,7 @@ with Logging
   }
   
   private def loadAllUserConfigurationFilesOrDie() {
+    log.info("entered loadAllUserConfigurationFilesOrDie")
     if (allVoiceCommands != null) allVoiceCommands.clear()
     if (phraseToCommandMap != null) phraseToCommandMap.clear()
 
@@ -326,6 +336,7 @@ with Logging
 
   
   private def loadAllVoiceCommands() {
+    log.info("entered loadAllVoiceCommands")
     for (cmdFile <- commandFiles) {
       var canonFilename = sarah.getDataFileDirectory + File.separator + cmdFile
       try
@@ -361,7 +372,7 @@ with Logging
   }
   
   private def handleUserDefinedVoiceCommand(textTheUserSaid: String): Boolean = {
-    log.info("Entered Brain::handleUserDefinedVoiceCommand")
+    log.info("entered handleUserDefinedVoiceCommand")
     val commandFileKey = phraseToCommandMap.get(textTheUserSaid)  // ex: COMPUTER, JUST_CHECKING
     log.info("Brain::handleUserDefinedVoiceCommand, commandFileKey = " + commandFileKey)
     // foreach is enabled by importing JavaConversions._ above
@@ -389,36 +400,23 @@ with Logging
     return false
   }
   
-  private def printMode() {
-    System.out.format ("listeningMode: %s\n", if (inSleepMode) "QUIET/SLEEP" else "NORMAL")
-  }  
-  
   private def replyToUserSayingThankYou {
+    log.info("entered replyToUserSayingThankYou")
     val textToSay = PluginUtils.getRandomStringFromFile(sarah.getDataFileDirectory + "/" + Brain.REPLY_TO_THANK_YOU_FILE)
     speak(textToSay)
   }
   
   private def replyToUserSayingComputer {
+    log.info("entered replyToUserSayingComputer")
     val textToSay = PluginUtils.getRandomStringFromFile(sarah.getDataFileDirectory + "/" + Brain.SAY_YES_FILE)
     speak(textToSay)
   }  
   
+  private def printMode() {
+    System.out.format ("listeningMode: %s\n", if (inSleepMode) "QUIET/SLEEP" else "NORMAL")
+  }  
+  
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

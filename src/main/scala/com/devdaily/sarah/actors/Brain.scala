@@ -66,7 +66,6 @@ with Logging
   val log = Logger("Brain")
 
   // actors we collaborate with
-  var brainPleaseSayHelper:ActorRef = _  
   var ears:ActorRef = _
   var mouth:ActorRef = _
   var brainSomethingWasHeardHelper = context.actorOf(Props(new BrainSomethingWasHeardHelper(sarah, microphone)), name = "BrainSomethingWasHeardHelper")
@@ -133,7 +132,6 @@ with Logging
   def handleConnectToSiblingsMessage {
     ears = context.actorFor("../Ears")
     mouth = context.actorFor("../Mouth")
-    brainPleaseSayHelper = context.actorOf(Props(new BrainPleaseSayHelper(mouth)), name = "BrainPleaseSayHelper")    
   }
 
   def handleMouthIsSpeakingMessage {
@@ -210,15 +208,17 @@ with Logging
   }
   
   def handleMessageFromEars(message: MessageFromEars) {
-   if (mouthIsSpeaking) {
-     log.info(format("sarah is speaking, ignoring message from ears (%s)", message.textFromUser))
-   }
-   else if (sarahJustFinishedSpeaking) {
-     log.info(format("sarah just spoke, ignoring message from ears (%s)", message.textFromUser))
-   } 
-   else {
-     brainPleaseSayHelper ! SomethingWasHeard(message.textFromUser, inSleepMode, awarenessState)
-   }
+    log.info("entered handleMessageFromEars")
+    if (mouthIsSpeaking) {
+      log.info(format("sarah is speaking, ignoring message from ears (%s)", message.textFromUser))
+    }
+    else if (sarahJustFinishedSpeaking) {
+      log.info(format("sarah just spoke, ignoring message from ears (%s)", message.textFromUser))
+    } 
+    else {
+      log.info(format("passing MessageFromEars to brainSomethingWasHeardHelper (%s)", message.textFromUser))
+      brainSomethingWasHeardHelper ! SomethingWasHeard(message.textFromUser, inSleepMode, awarenessState)
+    }
   }
   
   // all we do now is pass this on to another actor
@@ -227,19 +227,19 @@ with Logging
       log.info(format("in sleep mode, NOT passing on PleaseSay request (%s)", pleaseSay.textToSay))
     }
     else {
-      log.info(format("passing PleaseSay request to BrainPleaseSayHelper (%s)", pleaseSay.textToSay))
-      brainPleaseSayHelper ! SomethingWasHeard(pleaseSay.textToSay, inSleepMode, awarenessState)
+      log.info(format("passing PleaseSay request to brainSomethingWasHeardHelper (%s)", pleaseSay.textToSay))
+      //brainPleaseSayHelper ! SomethingWasHeard(pleaseSay.textToSay, inSleepMode, awarenessState)
+      brainSomethingWasHeardHelper ! SomethingWasHeard(pleaseSay.textToSay, inSleepMode, awarenessState)
     }
   }
 
-  // TODO duplication with handlePleaseSayRequest, refactor
   private def handlePlaySoundFileRequest(playSoundFileRequest: PlaySoundFileRequest) {
     if (inSleepMode) {
       log.info(format("in sleep mode, NOT passing on PlaySoundFile request (%s)", playSoundFileRequest.soundFile))
     }
     else {
-      log.info(format("passing PleaseSay request to BrainPleaseSayHelper (%s)", playSoundFileRequest.soundFile))
-      mouth ! playSoundFileRequest
+      log.info(format("passing SoundFileRequest to Mouth (%s)", playSoundFileRequest.soundFile))
+      brainSomethingWasHeardHelper ! playSoundFileRequest
     }
   }
 
