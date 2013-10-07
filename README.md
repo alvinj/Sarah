@@ -86,6 +86,8 @@ More Information
 
 Sarah was created by Alvin Alexander of http://alvinalexander.com
 
+See http://alvinalexander.com/sarah for more information.
+
 
 
 
