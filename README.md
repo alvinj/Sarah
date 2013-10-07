@@ -64,7 +64,7 @@ Running Sarah
 If you know how to use Scala and sbt, you can run Sarah from the root
 project directory like this:
 
-sbt run
+	sbt run
 
 If you don't know how to use those tools, sorry, I don't have any 
 documentation here to help you at this time.
