@@ -1,7 +1,6 @@
 <project name="Sarah" default="create-bundle" basedir=".">
 
   <taskdef name="bundleapp" classname="com.oracle.appbundler.AppBundlerTask"/>
-  <property environment="env"/>
 
   <!-- input stuff -->
   <property name="classes.dir" value="../target/scala-2.9.1.final/classes" />
@@ -73,41 +72,39 @@
         <runtime dir="${env.JAVA_HOME}" />
 
         <!-- need an entry for each jar file (!) -->
-        <classpath file="jar/WSJ_8gau_13dCep_16k_40mel_130Hz_6800Hz.jar" />
-        <classpath file="jar/akka-actor-2.0.2.jar" />
-        <classpath file="jar/basicplayer3.0.jar" />
-        <classpath file="jar/commons-codec-1.4.jar" />
-        <classpath file="jar/commons-lang3-3.1.jar" />
-        <classpath file="jar/commons-logging-1.1.1.jar" />
-        <classpath file="jar/dsn.jar" />
-        <classpath file="jar/htmlcleaner-2.2.jar" />
-        <classpath file="jar/httpclient-4.1.2.jar" />
-        <classpath file="jar/httpclient-cache-4.1.2.jar" />
-        <classpath file="jar/httpcore-4.1.2.jar" />
-        <classpath file="jar/httpmime-4.1.2.jar" />
-        <classpath file="jar/imap.jar" />
-        <classpath file="jar/jl1.0.1-orig.jar" />
-        <classpath file="jar/js.jar" />
-        <classpath file="jar/jsapi.jar" />
-        <classpath file="jar/junit-4.8.1.jar" />
-        <classpath file="jar/kj_dsp1.1.jar" />
-        <classpath file="jar/lift-json_2.9.0-1-2.4-M2.jar" />
-        <classpath file="jar/mailapi.jar" />
-        <classpath file="jar/mp3spi1.9.4.jar" />
-        <classpath file="jar/paranamer-2.1.jar" />
-        <classpath file="jar/pop3.jar" />
-        <classpath file="jar/sarah.jar" />
-        <classpath file="jar/scala-library.jar" />
-        <classpath file="jar/slf4j-api-1.6.4.jar" />
-        <classpath file="jar/slf4j-simple-1.6.4.jar" />
-        <classpath file="jar/slf4s_2.9.1-1.0.7.jar" />
-        <classpath file="jar/smtp.jar" />
-        <classpath file="jar/snakeyaml-1.9.jar" />
-        <classpath file="jar/sphinx4.jar" />
-        <classpath file="jar/tritonus_share.jar" />
+        <classpath file="lib/WSJ_8gau_13dCep_16k_40mel_130Hz_6800Hz.jar" />
+        <classpath file="lib/akka-actor-2.0.2.jar" />
+        <classpath file="lib/basicplayer3.0.jar" />
+        <classpath file="lib/commons-codec-1.4.jar" />
+        <classpath file="lib/commons-lang3-3.1.jar" />
+        <classpath file="lib/commons-logging-1.1.1.jar" />
+        <classpath file="lib/dsn.jar" />
+        <classpath file="lib/htmlcleaner-2.2.jar" />
+        <classpath file="lib/httpclient-4.1.2.jar" />
+        <classpath file="lib/httpclient-cache-4.1.2.jar" />
+        <classpath file="lib/httpcore-4.1.2.jar" />
+        <classpath file="lib/httpmime-4.1.2.jar" />
+        <classpath file="lib/imap.jar" />
+        <classpath file="lib/jl1.0.1-orig.jar" />
+        <classpath file="lib/js.jar" />
+        <classpath file="lib/jsapi.jar" />
+        <classpath file="lib/junit-4.8.1.jar" />
+        <classpath file="lib/kj_dsp1.1.jar" />
+        <classpath file="lib/lift-json_2.9.0-1-2.4-M2.jar" />
+        <classpath file="lib/mailapi.jar" />
+        <classpath file="lib/mp3spi1.9.4.jar" />
+        <classpath file="lib/paranamer-2.1.jar" />
+        <classpath file="lib/pop3.jar" />
+        <classpath file="lib/sarah.jar" />
+        <classpath file="lib/scala-library.jar" />
+        <classpath file="lib/slf4j-api-1.6.4.jar" />
+        <classpath file="lib/slf4j-simple-1.6.4.jar" />
+        <classpath file="lib/slf4s_2.9.1-1.0.7.jar" />
+        <classpath file="lib/smtp.jar" />
+        <classpath file="lib/snakeyaml-1.9.jar" />
+        <classpath file="lib/sphinx4.jar" />
+        <classpath file="lib/tritonus_share.jar" />
 
-        <!-- option value="-Xdock:icon=../Resources/sarah.icns"></option> -->
-        <option value="-Xdock:icon=Contents/Resources/sarah.icns"/>
         <option value="-Dapple.laf.useScreenMenuBar=true"/>
         <option value="-Dcom.apple.macos.use-file-dialog-packages=true"/>
         <option value="-Dcom.apple.macos.useScreenMenuBar=true"/>

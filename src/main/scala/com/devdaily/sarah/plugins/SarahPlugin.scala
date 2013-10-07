@@ -1,15 +1,15 @@
 package com.devdaily.sarah.plugins
 
-import com.devdaily.sarah.actors.Brain
+import akka.actor.ActorRef
 
 /**
  * TODO This API is TBD
  */
 trait SarahPlugin {
   
-  var brain: Brain = null
+  var brain: ActorRef = null
 
-  def connectToBrain(brain: Brain) {
+  def connectToBrain(brain: ActorRef) {
     this.brain = brain
   }
   

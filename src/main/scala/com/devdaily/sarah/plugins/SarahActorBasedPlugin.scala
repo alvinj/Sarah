@@ -16,5 +16,3 @@ trait SarahActorBasedPlugin extends Actor with SarahPlugin {
   }
   
 }
-
-

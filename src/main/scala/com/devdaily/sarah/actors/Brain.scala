@@ -1,6 +1,5 @@
 package com.devdaily.sarah.actors
 
-import akka.actor._
 import scala.util.Random
 import scala.collection.mutable.ListBuffer
 import edu.cmu.sphinx.frontend.util.Microphone
@@ -18,6 +17,10 @@ import _root_.com.devdaily.sarah._
 import _root_.com.devdaily.sarah.plugins._
 import scala.io.Source
 import scala.collection.mutable.ArrayBuffer
+import javax.swing.SwingUtilities
+import akka.actor._
+import akka.dispatch.{ Await, Future }
+import akka.util.duration._
 
 object Brain {
 
@@ -68,7 +71,10 @@ with Logging
   // actors we collaborate with
   var ears:ActorRef = _
   var mouth:ActorRef = _
-  var brainSomethingWasHeardHelper = context.actorOf(Props(new BrainSomethingWasHeardHelper(sarah, microphone)), name = "BrainSomethingWasHeardHelper")
+  val brainSomethingWasHeardHelper = context.actorOf(Props(new BrainSomethingWasHeardHelper(sarah, microphone)), name = "BrainSomethingWasHeardHelper")
+  
+  // i use this in a future call below. if that call isn't needed, this reference isn't needed
+  implicit val system = context.system
   
   // states we maintain
   private var mouthIsSpeaking = false
@@ -76,6 +82,9 @@ with Logging
   private var awarenessState = Brain.AWARENESS_STATE_AWAKE
   private var earsState = Brain.EARS_STATE_LISTENING
   
+  private var akkaPluginInstances = ArrayBuffer[SarahAkkaActorBasedPlugin]()
+  private var akkaPluginReferences = ArrayBuffer[ActorRef]()
+
   def receive = {
     
     // initialization
@@ -89,16 +98,21 @@ with Logging
     // actions
 
     case message: MessageFromEars =>
+         log.info(format("%d - got MessageFromEars", getCurrentTime))
          handleMessageFromEars(message)
 
     case pleaseSay: PleaseSay =>
+         log.info(format("%d - got PleaseSay request", getCurrentTime))
          handlePleaseSayRequest(pleaseSay)
 
     case playSoundFileRequest: PlaySoundFileRequest =>
+         log.info(format("%d - got PlaySoundFileRequest", getCurrentTime))
          handlePlaySoundFileRequest(playSoundFileRequest)
+         
+    case HeresANewPlugin(pluginRef) =>
+         handleNewPluginRef(pluginRef)
 
     // state
-
     case MouthIsSpeaking =>
          handleMouthIsSpeakingMessage
          
@@ -113,6 +127,9 @@ with Logging
          
     case SetMouthState(state) =>
          setMouthState(state)
+         
+    case SetBrainStates(awareness, ears, mouth) =>
+         setStates(awareness, ears, mouth)
 
     case GetAwarenessState => sender ! getAwarenessState
     case GetEarsState => sender ! getEarsState
@@ -129,6 +146,17 @@ with Logging
          log.info(format("got an unknown request(%s), ignoring it", unknown.toString))
   }
   
+  def handleNewPluginRef(pluginRef: ActorRef) {
+    akkaPluginReferences += pluginRef
+  }
+  
+//  def startAkkaPlugin(pluginInstance: SarahAkkaActorBasedPlugin) {
+//    // create the plugin, then give it a reference to the brain
+//    val pluginRef = context.actorOf(Props(pluginInstance), name = pluginInstance.getClass.getName)
+//    pluginRef ! StartPluginMessage(self)
+//    akkaPluginReferences += pluginRef
+//  }
+//  
   def handleConnectToSiblingsMessage {
     ears = context.actorFor("../Ears")
     mouth = context.actorFor("../Mouth")
@@ -159,14 +187,17 @@ with Logging
   
   def setAwarenessState(state: Int) {
     awarenessState = state
+    updateSarahsUI
   }
   
   def setEarsState(state: Int) {
     earsState = state
+    updateSarahsUI
   }
   
   def setMouthState(state: Int) {
     mouthState = state
+    updateSarahsUI
   }
 
   // use this method when setting multiple states at the same time
@@ -174,7 +205,19 @@ with Logging
     awarenessState = awareness
     earsState = ears
     mouthState = mouth
-    sarah.setStates(awareness, ears, mouth)  // TODO remove this
+    updateSarahsUI
+  }
+  
+  def updateSarahsUI {
+    val f1 = Future {  
+      SwingUtilities.invokeLater(new Runnable() 
+      {
+        def run
+        {
+          sarah.updateUI
+        }
+      });
+    }
   }
   
   def inSleepMode = if (getAwarenessState == Brain.AWARENESS_STATE_AWAKE) false else true
@@ -228,8 +271,7 @@ with Logging
     }
     else {
       log.info(format("passing PleaseSay request to brainSomethingWasHeardHelper (%s)", pleaseSay.textToSay))
-      //brainPleaseSayHelper ! SomethingWasHeard(pleaseSay.textToSay, inSleepMode, awarenessState)
-      brainSomethingWasHeardHelper ! SomethingWasHeard(pleaseSay.textToSay, inSleepMode, awarenessState)
+      brainSomethingWasHeardHelper ! pleaseSay
     }
   }
 

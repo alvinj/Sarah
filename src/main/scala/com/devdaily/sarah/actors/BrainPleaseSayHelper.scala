@@ -16,18 +16,13 @@ with Logging
   val log = Logger("BrainPleaseSayHelper")
 
   def receive = {
-    case pleaseSay: PleaseSay =>
-         log.info(format("got a please-say request (%s) at (%d)", pleaseSay.textToSay, System.currentTimeMillis))
-         handlePleaseSayRequest(pleaseSay)
+//    case pleaseSay: PleaseSay =>
+//         log.info(format("got a please-say request (%s) at (%d)", pleaseSay.textToSay, System.currentTimeMillis))
+//         handlePleaseSayRequest(pleaseSay)
 
     case unknown => 
          log.info(format("got an unknown request(%s), ignoring it", unknown.toString))
   }
-  
-  private def handlePleaseSayRequest(pleaseSay: PleaseSay) {
-    log.info(format("sending msg (%s) to mouth at (%d)", pleaseSay.textToSay, System.currentTimeMillis))
-    mouth ! SpeakMessageFromBrain(pleaseSay.textToSay)
-  }  
   
 }
 

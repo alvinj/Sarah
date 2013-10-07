@@ -1,4 +1,6 @@
 package com.devdaily.sarah.actors
+import akka.actor.ActorRef
+import com.devdaily.sarah.plugins.SarahAkkaActorBasedPlugin
 
 // brain messages
 
@@ -22,6 +24,14 @@ case class SomethingWasHeard(whatWeHeard: String,
                              awarenessState: Int)
 
 
+// message to the brain to start the plugin
+case class StartThisPlugin(plugin: SarahAkkaActorBasedPlugin)
+case class HeresANewPlugin(pluginRef: ActorRef)
+
+// messages to the plugins
+case class StartPluginMessage(brain: ActorRef)
+case class StopPluginMessage
+case class SetPluginDir(canonDir: String)
 
 
 

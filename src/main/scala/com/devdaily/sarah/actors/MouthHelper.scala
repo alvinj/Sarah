@@ -10,6 +10,7 @@ import com.devdaily.sarah.Sarah
 import com.devdaily.sarah.plugins.PlaySoundFileRequest
 import com.devdaily.sarah.ComputerVoice
 import com.devdaily.sarah.plugins.PluginUtils
+import com.devdaily.sarah.SoundFilePlayer
 
 case class MouthIsSpeaking
 case class MouthIsFinishedSpeaking
@@ -51,6 +52,11 @@ with Logging
     mouth ! MouthIsFinishedSpeaking
   }
   
+  /**
+   * TODO there is a bug here, where the playSound method returns immediately,
+   * even if it plays a 10-second clip. As a result, Sarah doesn't know when
+   * it last spoke.
+   */
   def playSoundFile(playSoundFileRequest: PlaySoundFileRequest) {
     mouth ! MouthIsSpeaking
     playSound(playSoundFileRequest.soundFile)
@@ -58,26 +64,27 @@ with Logging
     mouth ! MouthIsFinishedSpeaking
   }
   
-  /**
-   * Play the given sound file.
-   * @see http://www.devdaily.com/java/java-play-sound-file-from-command-line-wav-headless-mode
-   */
   def playSound(soundFile: String) {
-    import java.io.FileInputStream
-    import sun.audio.AudioStream
-    import sun.audio.AudioPlayer
     try {
-      var in = new FileInputStream(soundFile)
-      val audioStream = new AudioStream(in)
-      AudioPlayer.player.start(audioStream)
+      val p = new SoundFilePlayer(soundFile)
+      p.play
     } catch {
-      case e: Exception => e.printStackTrace
+      case e:Exception => log.error(e.getMessage)
     }
+    // TODO need to close the file, but to do so i need a way of knowing
+    // when the file is finished playing; this method doesn't seem to block,
+    // so you can't just call close() here.
   }
-
   
   
 }
+
+
+
+
+
+
+
 
 
 

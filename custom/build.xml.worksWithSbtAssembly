@@ -1,0 +1,51 @@
+<project name="Sarah" default="create-bundle" basedir=".">
+
+  <!-- DEPENDS ON 'JAVA_HOME' BEING SET -->
+  <!-- /Library/Java/JavaVirtualMachines/jdk1.7.0_09.jdk/Contents/Home -->
+
+  <taskdef name="bundleapp" classname="com.oracle.appbundler.AppBundlerTask"/>
+  <property environment="env"/>
+
+  <!-- input stuff -->
+  <property name="classes.dir" value="../target/scala-2.9.1.final/classes" />
+  <property name="lib.dir" value="../lib" />
+  <property name="current.dir" value="." />
+  <property name="scala-lib.dir" value="scala-libs" />
+
+  <!-- output stuff -->
+  <property name="jar.dir" value="jar" />
+  <property name="release.dir" value="release" />
+  <property name="jar.filename" value="sarah.jar" />
+
+  <target name="init">
+    <tstamp/>
+  </target>
+
+  <!-- CREATE MAC BUNDLE (NEW) -->
+
+  <target name="create-bundle">
+  <bundleapp outputdirectory="."
+        name="Sarah"
+        displayname="Sarah"
+        identifier="com.devdaily.sarah.Sarah"
+        shortversion="0.2"
+        applicationCategory="public.app-category.developer-tools"
+        mainclassname="com/devdaily/sarah/Sarah">
+
+        <runtime dir="${env.JAVA_HOME}" />
+
+        <!-- need an entry for each jar file (!) -->
+        <classpath file="Sarah-assembly-0.1.jar" />
+
+        <option value="-Dapple.laf.useScreenMenuBar=true"/>
+        <option value="-Dcom.apple.macos.use-file-dialog-packages=true"/>
+        <option value="-Dcom.apple.macos.useScreenMenuBar=true"/>
+        <option value="-Dapple.awt.application.name=MyApp"/>
+        <option value="-Dcom.apple.smallTabs=true"/>
+
+    </bundleapp>
+  </target>
+
+</project>
+
+

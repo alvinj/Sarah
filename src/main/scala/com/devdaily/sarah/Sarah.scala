@@ -100,8 +100,8 @@ class Sarah {
   // TODO get logging going to the sarah.log file
   val log = com.weiglewilczek.slf4s.Logger("Sarah")
 
-  // TODO populate this list of plugins
   var pluginInstances = ArrayBuffer[SarahPlugin]()
+  var akkaPluginInstances = ArrayBuffer[SarahAkkaActorBasedPlugin]()
   
   val splashImage = new ImageIcon(classOf[com.devdaily.sarah.Sarah].getResource(Sarah.SPLASH_SCREEN_IMAGE))
   var screen = new SplashScreen(splashImage)
@@ -170,9 +170,7 @@ class Sarah {
 
   def startRunning {
     
-    // TODO add this back in
-    //log.info("ASKING BRAIN TO SAY HELLO ...")
-    //brain ! PleaseSay("Hello, " + usersName)
+    loadPlugins
     
     mouth ! InitMouthMessage
 
@@ -180,6 +178,8 @@ class Sarah {
     ears ! StartListeningMessage
     ears ! InitEarsMessage
     log.info("SARAH:startRunning IS COMPLETE ...")
+    
+    brain ! PleaseSay("Hello, Al.")
   }
 
   /**
@@ -200,30 +200,26 @@ class Sarah {
   }
   
   private def getStateFromBrain(stateRequestMessage: StateRequestMessage):Int = {
-    implicit val timeout = Timeout(2 seconds)
+    implicit val timeout = Timeout(5 seconds)
     val future = brain ? stateRequestMessage
     val result = Await.result(future, timeout.duration).asInstanceOf[Int]
     result
   }
   
-  def setAwarenessState(state: Int) {
-    brain ! SetAwarenessState(state)
-    mainFrameController.updateUIBasedOnStates
-  }
-  
-  def setEarsState(state: Int) {
-    brain ! SetEarsState(state)
-    mainFrameController.updateUIBasedOnStates
-  }
-  
-  def setMouthState(state: Int) {
-    brain ! SetMouthState(state)
-    mainFrameController.updateUIBasedOnStates
-  }
+//  def setAwarenessState(state: Int) {
+//    mainFrameController.updateUIBasedOnStates
+//  }
+//  
+//  def setEarsState(state: Int) {
+//    mainFrameController.updateUIBasedOnStates
+//  }
+//  
+//  def setMouthState(state: Int) {
+//    mainFrameController.updateUIBasedOnStates
+//  }
 
   // use this method when setting multiple states at the same time
   def setStates(awareness: Int, ears: Int, mouth: Int) {
-    brain ! SetBrainStates(awareness, ears, mouth)
     mainFrameController.updateUIBasedOnStates
   }
   
@@ -261,10 +257,12 @@ class Sarah {
   
   def tryToHandleTextWithPlugins(textTheUserSaid: String): Boolean = {
     log.info("tryToHandleTextWithPlugins, TEXT = " + textTheUserSaid)
+    log.info("about to loop through plugins ...")
     // loop through the plugins, and see if any can handle what was said
     for (plugin <- pluginInstances) {
       
       // TODO plugins need to be able to update sarah's state 
+      log.info("plugin: " + plugin.toString)
       
       val handled = plugin.handlePhrase(textTheUserSaid)
       if (handled) return true
@@ -297,28 +295,89 @@ class Sarah {
         log.info("mainClassName = " + mainClassName)
         val canonJarFilename = canonPluginDir + Sarah.FILE_PATH_SEPARATOR + pluginJarFilename
         log.info("canonJarFilename = " + canonJarFilename)
-        val pluginInstance = getPluginInstance(canonJarFilename, mainClassName)
-        log.info("created pluginInstance, setting canonPluginDir")
-        pluginInstance.setPluginDirectory(canonPluginDir)
-        pluginInstances += pluginInstance
+
+        log.info("creating pluginInstance ...")
+
+        // TODO find a better way to tell the difference, such as reflection or
+        // the properties file
+        if (mainClassName.contains("Akka")) {
+          createAndStartAkkaPlugin(canonJarFilename, canonPluginDir, mainClassName)
+        } else {
+          createOldPluginInstance(canonJarFilename, canonPluginDir, mainClassName)
+        }
+        
       } // end for loop
       
-      // TODO defer startPlugin() until later???
-      log.info("Looping through plugin instances ...")
-      for (plugin <- pluginInstances) {
-        log.info("Trying to start plugin instance: " + plugin.toString())
-        connectInstanceToBrain(plugin)
-        startPlugin(plugin)
-      }
+      startOlderPlugins
+      //startAkkaPlugins
+      
     } catch {
       case e: Exception => // ignore, and move on to next plugin
-           log.error("Had a problem loading a plugin. See previous exceptions.")
+           log.error("Had a problem loading a plugin:")
+           log.error(e.getMessage)
       case e: RuntimeException =>
            log.error("Got a RuntimeException loading a plugin." + e.getMessage)
       case e: Error =>
            log.error("Got an Error loading a plugin." + e.getMessage)
     }
   }
+  
+  def createOldPluginInstance(canonJarFilename:String, canonPluginDir:String, mainClassName:String) {
+    val pluginInstance = getPluginInstance(canonJarFilename, mainClassName)
+    log.info("created pluginInstance, setting canonPluginDir")
+    pluginInstance.setPluginDirectory(canonPluginDir)
+    pluginInstances += pluginInstance
+  }
+  
+  def createAndStartAkkaPlugin(canonJarFilename:String, canonPluginDir:String, mainClassName:String) {
+    try {
+      log.info("In getAkkaPluginInstance, creating classLoader ...")
+      log.info("  canonicalJarFilename = " + canonJarFilename)
+      log.info("  mainClassName = " + mainClassName)
+      log.info("  creating classloader ...")
+      var classLoader = new java.net.URLClassLoader(Array(new File(canonJarFilename).toURI.toURL), this.getClass.getClassLoader)
+      log.info("  creating plugin ActorRef ...")
+      val pluginRef = system.actorOf(Props(classLoader.loadClass(mainClassName).newInstance.asInstanceOf[SarahAkkaActorBasedPlugin]), name = mainClassName)
+
+      // give the brain and pluginRef references to each other
+      pluginRef ! SetPluginDir(canonPluginDir)
+      pluginRef ! StartPluginMessage(brain)
+      log.info("  setting plugin dir to: " + canonPluginDir)
+      brain ! HeresANewPlugin(pluginRef)
+      
+      // TODO add this back in, make it a message
+//      akkaPluginInstances += akkaPluginInstance
+
+      //      var pluginInstance:SarahAkkaActorBasedPlugin = classLoader.loadClass(mainClassName).newInstance.asInstanceOf[SarahAkkaActorBasedPlugin]
+      log.info("returning new plugin instance ...")
+    } catch {
+      case cce: ClassCastException => log.error(cce.getMessage())
+                                      throw cce
+      case ame: AbstractMethodError => log.error(ame.getMessage())
+                                      throw new Exception("GOT AN AbstractMethodError")
+      case e:   Exception =>          log.error(e.getMessage())
+                                      throw e
+    }
+
+  }
+  
+  def startOlderPlugins {
+    log.info("starting old plugins ...")
+    for (plugin <- pluginInstances) {
+      log.info("Trying to start plugin instance: " + plugin.toString())
+      connectInstanceToBrain(plugin)
+      startPlugin(plugin)
+    }
+  }
+  
+//  def startAkkaPlugins {
+//    log.info("starting akka actor plugins ...")
+//    for (plugin <- akkaPluginInstances) {
+//      log.info("Trying to start plugin instance: " + plugin.toString())
+//      brain ! StartThisPlugin(plugin)
+//    }
+//  }
+  
 
   /**
    * Returns the plugin as a ready-to-run instance, or throws an exception.
@@ -333,9 +392,7 @@ class Sarah {
 
       // try to create plugin as an instance of SarahActorBasedPlugin. if that fails, try to create it as an
       // instance of just a SarahPlugin
-
       var pluginInstance:SarahPlugin = classLoader.loadClass(mainClassName).newInstance.asInstanceOf[SarahPlugin]
-
       log.info("returning new plugin instance ...")
       return pluginInstance
     } catch {
@@ -348,11 +405,15 @@ class Sarah {
     }
   }
   
+  /**
+   * Returns the plugin as a ready-to-run instance, or throws an exception.
+   */
+//  def getAkkaPluginInstance(canonicalJarFilename: String, mainClassName: String): SarahAkkaActorBasedPlugin = {
+//  }
+  
   def connectInstanceToBrain(pluginInstance: SarahPlugin) {
     log.info("connecting instance to brain")
-
-    // TODO add this back in
-    //pluginInstance.connectToBrain(brain)
+    pluginInstance.connectToBrain(brain)
   }
 
   def startPlugin(pluginInstance: SarahPlugin) {

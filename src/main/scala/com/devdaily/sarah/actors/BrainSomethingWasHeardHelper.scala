@@ -23,6 +23,7 @@ import edu.cmu.sphinx.frontend.util.Microphone
 import com.devdaily.sarah.Sarah
 import java.io.File
 import com.devdaily.sarah.plugins.PlaySoundFileRequest
+import com.devdaily.sarah.actors._
 
 class BrainSomethingWasHeardHelper(sarah: Sarah, microphone: Microphone)
 extends Actor
@@ -36,8 +37,6 @@ with Logging
   // map(sentence, appleScriptKey)
   var phraseCommandMapFiles:Array[String] = null
   var allPossibleSentences:List[String] = null
-  
-  //val greetStrings = new Array[String](3)
   var commandFiles:Array[String] = null
   
   // these need to be initialized
@@ -48,6 +47,10 @@ with Logging
     case SomethingWasHeard(t, s, a) =>
          handleSomethingWeHeard(t, s, a)
 
+    case pleaseSay: PleaseSay =>
+         log.info(format("got a please-say request (%s) at (%d)", pleaseSay.textToSay, System.currentTimeMillis))
+         handlePleaseSayRequest(pleaseSay)
+      
     case playSoundFileRequest: PlaySoundFileRequest =>
          handleSoundFileRequest(playSoundFileRequest)
       
@@ -55,11 +58,16 @@ with Logging
          log.info(format("got an unknown request(%s), ignoring it", unknown.toString))
   }
   
+  private def handlePleaseSayRequest(pleaseSay: PleaseSay) {
+    log.info(format("sending msg (%s) to mouth at (%d)", pleaseSay.textToSay, System.currentTimeMillis))
+    getMouth ! SpeakMessageFromBrain(pleaseSay.textToSay)
+  }  
+  
   /**
    * TODO move this to another actor, or rename this actor.
    */
   def handleSoundFileRequest(playSoundFileRequest: PlaySoundFileRequest) {
-    mouth ! playSoundFileRequest
+    getMouth ! playSoundFileRequest
   }
   
   /**
@@ -68,6 +76,7 @@ with Logging
   private def handleSomethingWeHeard(whatWeHeard: String,
                                      inSleepMode: Boolean,
                                      awarenessState: Int) {
+    if (whatWeHeard==null || whatWeHeard.trim().equals("")) return
     if (inSleepMode)
     {
       log.info("in sleep mode, checking to see if this is a WakeUp request")
@@ -236,12 +245,13 @@ with Logging
    */
   private def speak(textToSpeak: String) {
     log.info("entered speak, text is: " + textToSpeak)
-    if (mouth == null) {
-      log.info("mouth was null, creating it")
-      mouth = context.actorFor("../../Mouth")
-    }
     println(format("sending message (%s) to mouth at (%d)", textToSpeak, System.currentTimeMillis))
-    mouth ! SpeakMessageFromBrain(textToSpeak)
+    getMouth ! SpeakMessageFromBrain(textToSpeak)
+  }
+  
+  private def getMouth:ActorRef = {
+    if (mouth == null) mouth = context.actorFor("../../Mouth")
+    mouth
   }
   
   // TODO move to Utils
